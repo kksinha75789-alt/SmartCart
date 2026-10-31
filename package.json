@@ -1,0 +1,22 @@
+{
+  "name": "smartcart",
+  "version": "1.0.0",
+  "description": "SmartCart – Advanced Smart E-Commerce Order Processing Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test_concurrency.js"
+  },
+  "keywords": [
+    "ecommerce",
+    "microservices",
+    "concurrency",
+    "kafka",
+    "react"
+  ],
+  "author": "Kashish",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
