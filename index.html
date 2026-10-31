@@ -442,6 +442,33 @@
       const [pendingOutboxEvents, setPendingOutboxEvents] = useState([]);
       const [deadLetterEvents, setDeadLetterEvents] = useState([]);
 
+      // Live Backend Integration & Auto-Sync
+      const [backendConnected, setBackendConnected] = useState(false);
+
+      useEffect(() => {
+        const syncWithBackend = () => {
+          fetch('/api/system/health')
+            .then(res => {
+              if (res.ok) {
+                setBackendConnected(true);
+                return fetch('/api/products')
+                  .then(r => r.json())
+                  .then(data => {
+                    if (Array.isArray(data) && data.length > 0) setProducts(data);
+                  });
+              } else {
+                setBackendConnected(false);
+              }
+            })
+            .catch(() => {
+              setBackendConnected(false);
+            });
+        };
+        syncWithBackend();
+        const interval = setInterval(syncWithBackend, 8000);
+        return () => clearInterval(interval);
+      }, []);
+
       // Persist to LocalStorage
       useEffect(() => { localStorage.setItem('smartcart_products', JSON.stringify(products)); }, [products]);
       useEffect(() => { localStorage.setItem('smartcart_orders', JSON.stringify(orders)); }, [orders]);
@@ -901,6 +928,17 @@
                     <div className="flex items-center space-x-2">
                       <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Smart<span className="text-purple-600 dark:text-purple-400">Cart</span></span>
                       <span className="bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider border border-purple-200 dark:border-purple-800">Cloud Platform</span>
+                      {backendConnected ? (
+                        <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800 flex items-center space-x-1" title="Connected to Node.js Backend API & SQLite Database">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span>
+                          <span>API: Live (SQLite DB)</span>
+                        </span>
+                      ) : (
+                        <span className="bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-800 flex items-center space-x-1" title="Client-Side Standalone Simulation Mode (GitHub Pages)">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span>
+                          <span>Client Mode</span>
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Smart E-Commerce Order Processing</p>
                   </div>
