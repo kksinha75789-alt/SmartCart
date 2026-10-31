@@ -1,0 +1,168 @@
+{
+  "info": {
+    "name": "SmartCart – Cloud Computing Microservices API Collection",
+    "description": "Comprehensive Postman Collection for SmartCart Smart Order Processing System. Covers Authentication, Product Catalogue, Atomic Inventory Reservation, Saga Payments, System Health, and Chaos Engineering.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Product Catalogue",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/products", "host": ["{{baseUrl}}"], "path": ["api", "products"] }
+          }
+        },
+        {
+          "name": "Get Product by ID (iPhone 17)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/products/PROD-IPHONE17", "host": ["{{baseUrl}}"], "path": ["api", "products", "PROD-IPHONE17"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Smart Inventory & Atomic Reservation",
+      "item": [
+        {
+          "name": "Reserve Stock (Atomic Update)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"PROD-IPHONE17\",\n  \"quantity\": 1,\n  \"userId\": \"USR-001\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/inventory/reserve", "host": ["{{baseUrl}}"], "path": ["api", "inventory", "reserve"] }
+          }
+        },
+        {
+          "name": "Duplicate Buy Now (Test Idempotency)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "TEST-STATIC-KEY-12345" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"PROD-S25\",\n  \"quantity\": 1,\n  \"userId\": \"USR-001\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/inventory/reserve", "host": ["{{baseUrl}}"], "path": ["api", "inventory", "reserve"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Payment Gateway & Saga Orchestration",
+      "item": [
+        {
+          "name": "Process Payment (Success)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORD-991201\",\n  \"reservationId\": \"RES-SAMPLE-01\",\n  \"paymentMethod\": \"UPI\",\n  \"simulateFailure\": false\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/payments/process", "host": ["{{baseUrl}}"], "path": ["api", "payments", "process"] }
+          }
+        },
+        {
+          "name": "Process Payment (Simulated Failure & Saga Rollback)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORD-991201\",\n  \"reservationId\": \"RES-SAMPLE-01\",\n  \"paymentMethod\": \"CREDIT_CARD\",\n  \"simulateFailure\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/payments/process", "host": ["{{baseUrl}}"], "path": ["api", "payments", "process"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. High-Concurrency Stress Testing & Chaos",
+      "item": [
+        {
+          "name": "Flash Sale Simulation (50 Concurrent Buyers on Stock=1)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyersCount\": 50,\n  \"productId\": \"PROD-IPHONE17\",\n  \"stock\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/demo/flash-sale", "host": ["{{baseUrl}}"], "path": ["api", "demo", "flash-sale"] }
+          }
+        },
+        {
+          "name": "Toggle Service Failure (Kafka Outage)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"service\": \"kafkaBroker\",\n  \"mode\": \"OUTAGE\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/demo/toggle-failure", "host": ["{{baseUrl}}"], "path": ["api", "demo", "toggle-failure"] }
+          }
+        },
+        {
+          "name": "Recover Outbox Events to Kafka",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/demo/recover-outbox", "host": ["{{baseUrl}}"], "path": ["api", "demo", "recover-outbox"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Telemetry & Monitoring",
+      "item": [
+        {
+          "name": "System Health & Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/system/health", "host": ["{{baseUrl}}"], "path": ["api", "system", "health"] }
+          }
+        },
+        {
+          "name": "Kafka Event Bus Stream",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/events", "host": ["{{baseUrl}}"], "path": ["api", "events"] }
+          }
+        },
+        {
+          "name": "System Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/system/logs", "host": ["{{baseUrl}}"], "path": ["api", "system", "logs"] }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}
+

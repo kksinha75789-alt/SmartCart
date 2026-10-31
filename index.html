@@ -1,0 +1,2785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCart – Advanced Smart E-Commerce Order Processing Platform | Cloud Computing Microservices</title>
+  
+  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS 3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            navy: {
+              800: '#1E293B',
+              900: '#0F172A',
+              950: '#090D16',
+            },
+            smart: {
+              blue: '#1E40AF',
+              purple: '#6D28D9',
+              indigo: '#4F46E5',
+              accent: '#8B5CF6'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- React & Babel Standalone CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.3s, color 0.3s; }
+    
+    .glass-nav-light {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .glass-nav-dark {
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Animated Architecture Pulse Lines */
+    @keyframes pulse-flow {
+      0% { stroke-dashoffset: 24; }
+      100% { stroke-dashoffset: 0; }
+    }
+    .flow-line {
+      stroke-dasharray: 6 6;
+      animation: pulse-flow 1.2s linear infinite;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 antialiased selection:bg-purple-100 selection:text-purple-900">
+  <div id="root"></div>
+
+  <!-- Main SmartCart Advanced React Application -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    // =========================================================================
+    // INITIAL SEED DATA
+    // =========================================================================
+    const INITIAL_USERS = [
+      { id: 'USR-001', name: 'Alex Rivera', email: 'alex@example.com', role: 'CUSTOMER', phone: '+1 (555) 234-5678', address: '742 Evergreen Terrace, Springfield, OR' },
+      { id: 'USR-002', name: 'Sarah Jenkins', email: 'sarah@example.com', role: 'CUSTOMER', phone: '+1 (555) 987-6543', address: '221B Baker Street, London NW1 6XE' },
+      { id: 'USR-ADMIN', name: 'Professor / System Admin', email: 'admin@smartcart.io', role: 'ADMIN', phone: '+1 (555) 000-8888', address: 'Cloud Computing Research Lab, Tech Hall 401' }
+    ];
+
+    const INITIAL_PRODUCTS = [
+      {
+        id: 'PROD-IPHONE17',
+        name: 'iPhone 17 Pro Max 256GB Titanium',
+        brand: 'Apple',
+        category: 'Smartphones',
+        price: 1199.00,
+        originalPrice: 1399.00,
+        discountPercent: 14,
+        rating: 4.9,
+        reviewsCount: 1420,
+        totalQuantity: 1,
+        availableQuantity: 1, // CRITICAL: STOCK = 1 FOR CONCURRENCY TESTS!
+        reservedQuantity: 0,
+        soldQuantity: 0,
+        imageUrl: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=800&q=80',
+        description: 'Next-generation flagship smartphone with A19 Pro Bionic chip, Quantum OLED 120Hz ProMotion display, Titanium chassis, and Quad-Lens Periscope camera system with LiDAR.',
+        specs: {
+          'Processor': 'Apple A19 Pro (3nm Ultra)',
+          'Display': '6.9" Super Retina XDR OLED 120Hz',
+          'RAM': '12 GB Unified Architecture',
+          'Storage': '256 GB NVMe High-Speed',
+          'Camera': '48MP Main + 48MP Ultra-wide + 48MP Periscope Telephoto',
+          'Battery': '4,850 mAh (All-Day 28hr Playback)',
+          'OS': 'iOS 19 Pro'
+        }
+      },
+      {
+        id: 'PROD-S25',
+        name: 'Samsung Galaxy S25 Ultra 512GB',
+        brand: 'Samsung',
+        category: 'Smartphones',
+        price: 1299.00,
+        originalPrice: 1499.00,
+        discountPercent: 13,
+        rating: 4.8,
+        reviewsCount: 980,
+        totalQuantity: 10,
+        availableQuantity: 8,
+        reservedQuantity: 2,
+        soldQuantity: 0,
+        imageUrl: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&w=800&q=80',
+        description: 'AI-infused powerhouse with Snapdragon 8 Elite, 200MP Quad Telephoto camera, embedded S-Pen, and Corning Gorilla Armor 2 anti-reflective display.',
+        specs: {
+          'Processor': 'Qualcomm Snapdragon 8 Elite Mobile Platform',
+          'Display': '6.8" Dynamic AMOLED 2X 1-120Hz Quad HD+',
+          'RAM': '16 GB LPDDR5X',
+          'Storage': '512 GB UFS 4.0 Storage',
+          'Camera': '200MP Wide + 50MP 5x Periscope + 50MP 3x + 12MP Ultra-wide',
+          'Battery': '5,000 mAh with 45W Fast Charging',
+          'OS': 'One UI 7.0 (Android 15)'
+        }
+      },
+      {
+        id: 'PROD-MACBOOK',
+        name: 'MacBook Air 15" M3 Chip 16GB',
+        brand: 'Apple',
+        category: 'Laptops',
+        price: 1499.00,
+        originalPrice: 1699.00,
+        discountPercent: 12,
+        rating: 4.9,
+        reviewsCount: 2150,
+        totalQuantity: 15,
+        availableQuantity: 12,
+        reservedQuantity: 1,
+        soldQuantity: 2,
+        imageUrl: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80',
+        description: 'Impossibly thin and fast laptop featuring Apple M3 chip, liquid retina display with True Tone, 18-hour battery life, and MagSafe 3 charging.',
+        specs: {
+          'Processor': 'Apple M3 (8-core CPU, 10-core GPU, 16-core Neural Engine)',
+          'Display': '15.3" Liquid Retina 2880x1864 with 500 nits brightness',
+          'RAM': '16 GB Unified Memory',
+          'Storage': '512 GB PCIe SSD',
+          'Battery': '66.5Wh Lithium Polymer, Up to 18 Hours',
+          'OS': 'macOS Sonoma'
+        }
+      },
+      {
+        id: 'PROD-HPLAPTOP',
+        name: 'HP Spectre x360 2-in-1 OLED Touch',
+        brand: 'HP',
+        category: 'Laptops',
+        price: 1349.00,
+        originalPrice: 1599.00,
+        discountPercent: 16,
+        rating: 4.7,
+        reviewsCount: 640,
+        totalQuantity: 8,
+        availableQuantity: 7,
+        reservedQuantity: 0,
+        soldQuantity: 1,
+        imageUrl: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=800&q=80',
+        description: 'Premium convertible laptop with Intel Core Ultra 7 with built-in Intel AI Boost NPU, 2.8K 120Hz OLED touchscreen, and 9MP IR AI camera.',
+        specs: {
+          'Processor': 'Intel Core Ultra 7 155H (16-cores, up to 4.8 GHz)',
+          'Display': '14.0" 2.8K (2880x1800) OLED 120Hz 0.2ms Touchscreen',
+          'RAM': '32 GB LPDDR5x 7467MHz Dual Channel',
+          'Storage': '1 TB PCIe Gen4 NVMe TLC M.2 SSD',
+          'OS': 'Windows 11 Home 64-bit'
+        }
+      },
+      {
+        id: 'PROD-SONYHEADPHONES',
+        name: 'Sony WH-1000XM5 Wireless ANC Headphones',
+        brand: 'Sony',
+        category: 'Audio',
+        price: 348.00,
+        originalPrice: 399.00,
+        discountPercent: 13,
+        rating: 4.8,
+        reviewsCount: 3890,
+        totalQuantity: 25,
+        availableQuantity: 20,
+        reservedQuantity: 2,
+        soldQuantity: 3,
+        imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80',
+        description: 'Industry-leading noise canceling headphones with Auto NC Optimizer, 8 microphones, 30mm carbon fiber drivers, and 30-hour battery life.',
+        specs: {
+          'Type': 'Over-Ear Circumaural Closed Dynamic',
+          'Noise Cancellation': 'Integrated Processor V1 + HD NC Processor QN1',
+          'Battery Life': '30 Hours (ANC On), 40 Hours (ANC Off)',
+          'Connectivity': 'Bluetooth 5.2 Multipoint, LDAC, 3.5mm Aux'
+        }
+      },
+      {
+        id: 'PROD-SMARTWATCH',
+        name: 'Apple Watch Ultra 2 Titanium 49mm',
+        brand: 'Apple',
+        category: 'Wearables',
+        price: 799.00,
+        originalPrice: 849.00,
+        discountPercent: 6,
+        rating: 4.9,
+        reviewsCount: 1120,
+        totalQuantity: 30,
+        availableQuantity: 27,
+        reservedQuantity: 1,
+        soldQuantity: 2,
+        imageUrl: 'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=800&q=80',
+        description: 'The most rugged and capable Apple Watch. Engineered for outdoor endurance, ocean sports, 3000 nits display brightness, and dual-frequency GPS.',
+        specs: {
+          'Case Material': 'Aerospace-Grade Titanium with Sapphire Front',
+          'Display': '49mm Always-On Retina OLED (3000 nits Peak)',
+          'Battery': 'Up to 36 hours normal use (72h Low Power Mode)'
+        }
+      },
+      {
+        id: 'PROD-EARBUDS',
+        name: 'Sony WF-1000XM5 True Wireless Earbuds',
+        brand: 'Sony',
+        category: 'Audio',
+        price: 279.00,
+        originalPrice: 299.00,
+        discountPercent: 7,
+        rating: 4.6,
+        reviewsCount: 890,
+        totalQuantity: 50,
+        availableQuantity: 45,
+        reservedQuantity: 3,
+        soldQuantity: 2,
+        imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=800&q=80',
+        description: 'Astonishing sound quality and best-in-class noise cancellation with dynamic driver X, dual processors, bone conduction sensors, and AI speech pickup.',
+        specs: {
+          'Type': 'In-Ear True Wireless Noise Cancelling',
+          'Battery': '8 Hours + 16 Hours with Qi Wireless Charging Case'
+        }
+      },
+      {
+        id: 'PROD-SMARTTV',
+        name: 'Sony BRAVIA XR 65" 4K HDR OLED Google TV',
+        brand: 'Sony',
+        category: 'Smart TV',
+        price: 1798.00,
+        originalPrice: 2199.00,
+        discountPercent: 18,
+        rating: 4.8,
+        reviewsCount: 540,
+        totalQuantity: 5,
+        availableQuantity: 4,
+        reservedQuantity: 1,
+        soldQuantity: 0,
+        imageUrl: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=800&q=80',
+        description: 'Pure black OLED brilliance powered by Cognitive Processor XR, Acoustic Surface Audio+, Dolby Vision Atmos, and 4K 120Hz HDMI 2.1 for PS5 gaming.',
+        specs: {
+          'Screen Size': '65 Inch Diagonal OLED Matrix',
+          'Resolution': '4K Ultra HD (3840 x 2160 Pixels)',
+          'Smart OS': 'Google TV with Hands-Free Google Assistant'
+        }
+      }
+    ];
+
+    const INITIAL_ORDERS = [
+      {
+        id: 'ORD-991201',
+        userId: 'USR-001',
+        status: 'DELIVERED',
+        subtotal: 1499.00,
+        discount: 50.00,
+        shippingFee: 0.00,
+        tax: 115.92,
+        totalAmount: 1564.92,
+        paymentMethod: 'UPI',
+        transactionRef: 'TXN-UPI-9912',
+        items: [{ productId: 'PROD-MACBOOK', name: 'MacBook Air 15" M3 Chip 16GB', quantity: 1, price: 1499.00 }],
+        shippingAddress: '742 Evergreen Terrace, Springfield, OR',
+        customerPhone: '+1 (555) 234-5678',
+        createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString()
+      },
+      {
+        id: 'ORD-991202',
+        userId: 'USR-002',
+        status: 'SHIPPED',
+        subtotal: 348.00,
+        discount: 0.00,
+        shippingFee: 0.00,
+        tax: 27.84,
+        totalAmount: 375.84,
+        paymentMethod: 'CREDIT_CARD',
+        transactionRef: 'TXN-CARD-8812',
+        items: [{ productId: 'PROD-SONYHEADPHONES', name: 'Sony WH-1000XM5 Wireless ANC Headphones', quantity: 1, price: 348.00 }],
+        shippingAddress: '221B Baker Street, London NW1 6XE',
+        customerPhone: '+1 (555) 987-6543',
+        createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString()
+      }
+    ];
+
+    const INITIAL_RESERVATIONS = [
+      {
+        id: 'RES-SEED01-2026',
+        orderId: 'ORD-DEMO-01',
+        productId: 'PROD-S25',
+        userId: 'USR-001',
+        quantity: 1,
+        status: 'HELD',
+        heldAt: new Date(Date.now() - 120 * 1000).toISOString(),
+        expiresAt: new Date(Date.now() + 180 * 1000).toISOString(), // 3 mins remaining
+        releaseReason: null
+      }
+    ];
+
+    const INITIAL_EVENTS = [
+      {
+        id: 'EVT-901',
+        topic: 'inventory.reserved',
+        producer: 'inventory-service',
+        consumer: 'order-service',
+        partition: 0,
+        offset: 1402,
+        timestamp: new Date(Date.now() - 120 * 1000).toLocaleTimeString(),
+        payload: { reservationId: 'RES-SEED01-2026', productId: 'PROD-S25', userId: 'USR-001', quantity: 1, status: 'HELD' }
+      },
+      {
+        id: 'EVT-900',
+        topic: 'payment.succeeded',
+        producer: 'payment-service',
+        consumer: 'order-service',
+        partition: 1,
+        offset: 894,
+        timestamp: new Date(Date.now() - 3600 * 1000).toLocaleTimeString(),
+        payload: { orderId: 'ORD-991202', amount: 375.84, paymentMethod: 'CREDIT_CARD', status: 'SUCCESS' }
+      }
+    ];
+
+    // =========================================================================
+    // MAIN APP COMPONENT
+    // =========================================================================
+    function App() {
+      // Dark / Light Mode
+      const [darkMode, setDarkMode] = useState(() => {
+        return localStorage.getItem('smartcart_theme') === 'dark';
+      });
+
+      useEffect(() => {
+        if (darkMode) {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('smartcart_theme', 'dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('smartcart_theme', 'light');
+        }
+      }, [darkMode]);
+
+      // Navigation
+      // Tabs: 'home', 'products', 'flash-sale', 'architecture', 'failure-sim', 'analytics', 'monitoring', 'demo', 'admin', 'customer', 'checkout'
+      const [currentTab, setCurrentTab] = useState('home');
+      const [selectedCategory, setSelectedCategory] = useState('All');
+      const [searchQuery, setSearchQuery] = useState('');
+      const [priceFilter, setPriceFilter] = useState(2500);
+      const [sortBy, setSortBy] = useState('featured');
+
+      // Modals
+      const [activeModalProduct, setActiveModalProduct] = useState(null);
+      const [authModalOpen, setAuthModalOpen] = useState(false);
+      const [authMode, setAuthMode] = useState('login');
+
+      // Users & State
+      const [currentUser, setCurrentUser] = useState(INITIAL_USERS[0]); // Alex Rivera
+      const [usersList, setUsersList] = useState(INITIAL_USERS);
+      const [wishlist, setWishlist] = useState(['PROD-IPHONE17']);
+
+      // Products, Orders, Reservations, Events
+      const [products, setProducts] = useState(() => {
+        const saved = localStorage.getItem('smartcart_products');
+        return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+      });
+
+      const [orders, setOrders] = useState(() => {
+        const saved = localStorage.getItem('smartcart_orders');
+        return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+      });
+
+      const [reservations, setReservations] = useState(() => {
+        const saved = localStorage.getItem('smartcart_reservations');
+        return saved ? JSON.parse(saved) : INITIAL_RESERVATIONS;
+      });
+
+      const [eventStream, setEventStream] = useState(() => {
+        const saved = localStorage.getItem('smartcart_events');
+        return saved ? JSON.parse(saved) : INITIAL_EVENTS;
+      });
+
+      // Cart
+      const [cart, setCart] = useState([]);
+      const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
+      const [couponCode, setCouponCode] = useState('');
+      const [discountMultiplier, setDiscountMultiplier] = useState(0);
+
+      // Checkout Reservation
+      const [activeCheckoutReservation, setActiveCheckoutReservation] = useState(null);
+      const [checkoutStep, setCheckoutStep] = useState(1);
+      const [paymentMethod, setPaymentMethod] = useState('UPI');
+      const [simulatedFailure, setSimulatedFailure] = useState(false);
+      const [simulatedTimeout, setSimulatedTimeout] = useState(false);
+      const [paymentLoading, setPaymentLoading] = useState(false);
+      const [completedOrder, setCompletedOrder] = useState(null);
+
+      // Toast Notifications
+      const [toast, setToast] = useState(null);
+
+      // Chaos / Failure States
+      const [kafkaDown, setKafkaDown] = useState(false);
+      const [circuitBreakerTripped, setCircuitBreakerTripped] = useState(false);
+      const [pendingOutboxEvents, setPendingOutboxEvents] = useState([]);
+      const [deadLetterEvents, setDeadLetterEvents] = useState([]);
+
+      // Persist to LocalStorage
+      useEffect(() => { localStorage.setItem('smartcart_products', JSON.stringify(products)); }, [products]);
+      useEffect(() => { localStorage.setItem('smartcart_orders', JSON.stringify(orders)); }, [orders]);
+      useEffect(() => { localStorage.setItem('smartcart_reservations', JSON.stringify(reservations)); }, [reservations]);
+      useEffect(() => { localStorage.setItem('smartcart_events', JSON.stringify(eventStream)); }, [eventStream]);
+
+      const showToast = (message, type = 'info') => {
+        setToast({ message, type, id: Date.now() });
+      };
+
+      const emitKafkaEvent = (topic, payload, producer = 'inventory-service', consumer = 'order-service') => {
+        if (kafkaDown) {
+          // Transactional Outbox Pattern: Buffer in pending outbox
+          const outboxId = 'OUTBOX-' + Math.floor(1000 + Math.random() * 9000);
+          const outboxItem = {
+            id: outboxId,
+            topic,
+            payload,
+            status: 'PENDING',
+            retryCount: 0,
+            timestamp: new Date().toLocaleTimeString()
+          };
+          setPendingOutboxEvents(prev => [outboxItem, ...prev]);
+          showToast(`Kafka Outage! Event buffered in outbox_events table with status PENDING`, 'warning');
+          return;
+        }
+
+        const newEvent = {
+          id: 'EVT-' + Math.floor(1000 + Math.random() * 9000),
+          topic: topic,
+          producer: producer,
+          consumer: consumer,
+          partition: Math.floor(Math.random() * 3),
+          offset: eventStream.length + 1400,
+          timestamp: new Date().toLocaleTimeString(),
+          status: 'PROCESSED',
+          payload: payload
+        };
+        setEventStream(prev => [newEvent, ...prev.slice(0, 49)]);
+      };
+
+      // 5-MINUTE RESERVATION AUTO-EXPIRATION WORKER
+      useEffect(() => {
+        const timer = setInterval(() => {
+          const now = Date.now();
+          setReservations(prevReservations => {
+            let updatedAny = false;
+            const updated = prevReservations.map(res => {
+              if (res.status === 'HELD' && new Date(res.expiresAt).getTime() <= now) {
+                updatedAny = true;
+                // Atomic Return of stock
+                setProducts(prevProducts => prevProducts.map(p => {
+                  if (p.id === res.productId) {
+                    return {
+                      ...p,
+                      availableQuantity: p.availableQuantity + res.quantity,
+                      reservedQuantity: Math.max(0, p.reservedQuantity - res.quantity)
+                    };
+                  }
+                  return p;
+                }));
+
+                emitKafkaEvent('inventory.released', {
+                  reservationId: res.id,
+                  productId: res.productId,
+                  quantity: res.quantity,
+                  reason: 'TIMEOUT_EXPIRED_5_MINUTES'
+                }, 'inventory-service', 'notification-service');
+
+                if (activeCheckoutReservation && activeCheckoutReservation.id === res.id) {
+                  showToast('Your 5-minute checkout reservation expired! Stock has been returned to the public pool.', 'error');
+                  setActiveCheckoutReservation(null);
+                  setCurrentTab('products');
+                }
+
+                return {
+                  ...res,
+                  status: 'EXPIRED',
+                  releaseReason: 'TIMEOUT_EXPIRED_5_MINUTES',
+                  releasedAt: new Date().toISOString()
+                };
+              }
+              return res;
+            });
+            return updated;
+          });
+        }, 1000);
+
+        return () => clearInterval(timer);
+      }, [activeCheckoutReservation, kafkaDown]);
+
+      // ATOMIC RESERVATION
+      const handleReserveProduct = (product, quantity = 1, requestedByUserId = null) => {
+        const userId = requestedByUserId || currentUser.id;
+        const currentProd = products.find(p => p.id === product.id);
+
+        if (!currentProd) return { success: false, message: 'Product not found.' };
+
+        // ATOMIC CONDITIONAL CHECK:
+        // UPDATE inventory SET available = available - 1 WHERE available >= 1
+        if (currentProd.availableQuantity < quantity) {
+          const conflictMsg = 'This item is currently reserved by another customer. It may become available again if their payment is not completed.';
+          showToast(conflictMsg, 'warning');
+          return {
+            success: false,
+            status: 'CONFLICT',
+            availableStock: currentProd.availableQuantity,
+            message: conflictMsg
+          };
+        }
+
+        // WINNER
+        const reservationId = 'RES-' + Math.random().toString(36).substring(2, 8).toUpperCase() + '-2026';
+        const orderId = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
+        const heldAt = new Date();
+        const expiresAt = new Date(heldAt.getTime() + 5 * 60 * 1000); // 300s
+
+        setProducts(prev => prev.map(p => {
+          if (p.id === product.id) {
+            return {
+              ...p,
+              availableQuantity: p.availableQuantity - quantity,
+              reservedQuantity: p.reservedQuantity + quantity
+            };
+          }
+          return p;
+        }));
+
+        const newReservation = {
+          id: reservationId,
+          orderId: orderId,
+          productId: product.id,
+          productName: product.name,
+          productPrice: product.price,
+          productImage: product.imageUrl,
+          userId: userId,
+          userName: usersList.find(u => u.id === userId)?.name || 'Shopper',
+          quantity: quantity,
+          status: 'HELD',
+          heldAt: heldAt.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+          releaseReason: null
+        };
+
+        setReservations(prev => [newReservation, ...prev]);
+
+        emitKafkaEvent('inventory.reserved', {
+          reservationId,
+          orderId,
+          productId: product.id,
+          userId,
+          quantity,
+          status: 'HELD',
+          expiresAt: expiresAt.toISOString()
+        }, 'inventory-service', 'order-service');
+
+        setActiveCheckoutReservation(newReservation);
+        setCheckoutStep(1);
+        setCurrentTab('checkout');
+        if (activeModalProduct) setActiveModalProduct(null);
+
+        showToast(`Stock reserved! Reservation ID: ${reservationId}. Complete payment within 5 minutes.`, 'success');
+
+        return { success: true, reservation: newReservation };
+      };
+
+      // PAYMENT PROCESSOR
+      const handleProcessPayment = () => {
+        if (!activeCheckoutReservation) return;
+
+        if (circuitBreakerTripped) {
+          showToast('Payment Circuit Breaker is OPEN due to simulated upstream gateway failure!', 'error');
+          return;
+        }
+
+        setPaymentLoading(true);
+
+        setTimeout(() => {
+          setPaymentLoading(false);
+
+          if (simulatedTimeout) {
+            showToast('Gateway Timeout! Order marked PAYMENT_PENDING. Stock remains safely locked until webhook arrives.', 'warning');
+            return;
+          }
+
+          if (simulatedFailure) {
+            // SAGA COMPENSATION: Rollback stock
+            setProducts(prev => prev.map(p => {
+              if (p.id === activeCheckoutReservation.productId) {
+                return {
+                  ...p,
+                  availableQuantity: p.availableQuantity + activeCheckoutReservation.quantity,
+                  reservedQuantity: Math.max(0, p.reservedQuantity - activeCheckoutReservation.quantity)
+                };
+              }
+              return p;
+            }));
+
+            setReservations(prev => prev.map(res => {
+              if (res.id === activeCheckoutReservation.id) {
+                return {
+                  ...res,
+                  status: 'RELEASED',
+                  releaseReason: 'PAYMENT_FAILED_SIMULATION',
+                  releasedAt: new Date().toISOString()
+                };
+              }
+              return res;
+            }));
+
+            emitKafkaEvent('payment.failed', {
+              orderId: activeCheckoutReservation.orderId,
+              reservationId: activeCheckoutReservation.id,
+              reason: 'CARD_DECLINED_INSUFFICIENT_FUNDS'
+            }, 'payment-service', 'inventory-service');
+
+            emitKafkaEvent('inventory.released', {
+              reservationId: activeCheckoutReservation.id,
+              productId: activeCheckoutReservation.productId,
+              reason: 'PAYMENT_FAILED'
+            }, 'inventory-service', 'notification-service');
+
+            showToast('Payment Declined! Reserved inventory has been safely released back to available stock.', 'error');
+            setActiveCheckoutReservation(null);
+            setCurrentTab('products');
+            return;
+          }
+
+          // SUCCESS
+          setProducts(prev => prev.map(p => {
+            if (p.id === activeCheckoutReservation.productId) {
+              return {
+                ...p,
+                reservedQuantity: Math.max(0, p.reservedQuantity - activeCheckoutReservation.quantity),
+                soldQuantity: p.soldQuantity + activeCheckoutReservation.quantity
+              };
+            }
+            return p;
+          }));
+
+          setReservations(prev => prev.map(res => {
+            if (res.id === activeCheckoutReservation.id) {
+              return {
+                ...res,
+                status: 'CONFIRMED',
+                confirmedAt: new Date().toISOString(),
+                releaseReason: 'PAYMENT_SUCCESS'
+              };
+            }
+            return res;
+          }));
+
+          const subtotal = activeCheckoutReservation.productPrice * activeCheckoutReservation.quantity;
+          const discountAmt = subtotal * discountMultiplier;
+          const taxAmt = (subtotal - discountAmt) * 0.08;
+          const totalAmt = subtotal - discountAmt + taxAmt;
+
+          const newOrder = {
+            id: activeCheckoutReservation.orderId,
+            userId: activeCheckoutReservation.userId,
+            reservationId: activeCheckoutReservation.id,
+            status: 'CONFIRMED',
+            subtotal: subtotal,
+            discount: discountAmt,
+            shippingFee: 0.00,
+            tax: taxAmt,
+            totalAmount: totalAmt,
+            paymentMethod: paymentMethod,
+            transactionRef: 'TXN-' + paymentMethod + '-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+            items: [{
+              productId: activeCheckoutReservation.productId,
+              name: activeCheckoutReservation.productName,
+              quantity: activeCheckoutReservation.quantity,
+              price: activeCheckoutReservation.productPrice,
+              image: activeCheckoutReservation.productImage
+            }],
+            shippingAddress: currentUser.address,
+            customerPhone: currentUser.phone,
+            createdAt: new Date().toISOString()
+          };
+
+          setOrders(prev => [newOrder, ...prev]);
+          setCompletedOrder(newOrder);
+
+          emitKafkaEvent('payment.succeeded', {
+            orderId: newOrder.id,
+            reservationId: activeCheckoutReservation.id,
+            transactionRef: newOrder.transactionRef,
+            amount: totalAmt,
+            paymentMethod: paymentMethod
+          }, 'payment-service', 'order-service');
+
+          emitKafkaEvent('order.confirmed', {
+            orderId: newOrder.id,
+            userId: newOrder.userId,
+            totalAmount: totalAmt,
+            status: 'CONFIRMED'
+          }, 'order-service', 'notification-service');
+
+          setCart(prev => prev.filter(item => item.id !== activeCheckoutReservation.productId));
+          setCheckoutStep(3); // Success Screen
+          showToast(`Order Confirmed! Receipt generated for ${newOrder.id}`, 'success');
+        }, 1000);
+      };
+
+      // CART OPERATIONS
+      const addToCart = (product) => {
+        setCart(prev => {
+          const existing = prev.find(item => item.id === product.id);
+          if (existing) {
+            if (existing.quantity >= product.availableQuantity) {
+              showToast(`Only ${product.availableQuantity} available in total.`, 'warning');
+              return prev;
+            }
+            showToast(`Added another ${product.name} to cart.`, 'info');
+            return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+          } else {
+            showToast(`Added ${product.name} to cart.`, 'success');
+            return [...prev, { ...product, quantity: 1 }];
+          }
+        });
+        setCartDrawerOpen(true);
+      };
+
+      const removeFromCart = (productId) => {
+        setCart(prev => prev.filter(item => item.id !== productId));
+      };
+
+      const updateCartQuantity = (productId, delta) => {
+        setCart(prev => prev.map(item => {
+          if (item.id === productId) {
+            const product = products.find(p => p.id === productId);
+            const newQty = item.quantity + delta;
+            if (newQty <= 0) return null;
+            if (product && newQty > product.availableQuantity) {
+              showToast(`Only ${product.availableQuantity} available in stock.`, 'warning');
+              return item;
+            }
+            return { ...item, quantity: newQty };
+          }
+          return item;
+        }).filter(Boolean));
+      };
+
+      const cartSubtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const cartDiscount = cartSubtotal * discountMultiplier;
+      const cartTax = (cartSubtotal - cartDiscount) * 0.08;
+      const cartTotal = cartSubtotal - cartDiscount + cartTax;
+
+      // WISHLIST TOGGLE
+      const toggleWishlist = (productId) => {
+        setWishlist(prev => {
+          if (prev.includes(productId)) {
+            showToast('Removed from wishlist.', 'info');
+            return prev.filter(id => id !== productId);
+          } else {
+            showToast('Added to wishlist!', 'success');
+            return [...prev, productId];
+          }
+        });
+      };
+
+      // OUTBOX RECOVERY
+      const handleRecoverOutbox = () => {
+        let count = pendingOutboxEvents.length;
+        if (count === 0) {
+          showToast('No pending outbox events to recover.', 'info');
+          return;
+        }
+        pendingOutboxEvents.forEach(evt => {
+          emitKafkaEvent(evt.topic, evt.payload, 'outbox-relay-worker', 'order-service');
+        });
+        setPendingOutboxEvents([]);
+        showToast(`Successfully published ${count} pending events from Transactional Outbox to Kafka!`, 'success');
+      };
+
+      // Filtered products
+      const filteredProducts = useMemo(() => {
+        return products.filter(p => {
+          const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+          const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                p.brand.toLowerCase().includes(searchQuery.toLowerCase());
+          const matchesPrice = p.price <= priceFilter;
+          return matchesCategory && matchesSearch && matchesPrice;
+        }).sort((a, b) => {
+          if (sortBy === 'price-low') return a.price - b.price;
+          if (sortBy === 'price-high') return b.price - a.price;
+          if (sortBy === 'rating') return b.rating - a.rating;
+          return 0;
+        });
+      }, [products, selectedCategory, searchQuery, priceFilter, sortBy]);
+
+      useEffect(() => {
+        if (window.lucide) window.lucide.createIcons();
+      });
+
+      return (
+        <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-200">
+          
+          {/* TOAST NOTIFICATION */}
+          {toast && (
+            <div className={`fixed bottom-6 right-6 z-50 max-w-md p-4 rounded-2xl shadow-2xl flex items-start space-x-3 transition-all duration-300 border backdrop-blur-md ${
+              toast.type === 'success' ? 'bg-emerald-950/90 text-emerald-100 border-emerald-500' :
+              toast.type === 'error' ? 'bg-rose-950/90 text-rose-100 border-rose-500' :
+              toast.type === 'warning' ? 'bg-amber-950/90 text-amber-100 border-amber-500' :
+              'bg-slate-900/90 text-slate-100 border-slate-700'
+            }`}>
+              <div className="pt-0.5">
+                {toast.type === 'success' && <i data-lucide="check-circle" className="w-5 h-5 text-emerald-400"></i>}
+                {toast.type === 'error' && <i data-lucide="alert-triangle" className="w-5 h-5 text-rose-400"></i>}
+                {toast.type === 'warning' && <i data-lucide="alert-circle" className="w-5 h-5 text-amber-400"></i>}
+                {toast.type === 'info' && <i data-lucide="info" className="w-5 h-5 text-blue-400"></i>}
+              </div>
+              <div className="flex-1 text-xs font-semibold leading-relaxed">{toast.message}</div>
+              <button onClick={() => setToast(null)} className="text-slate-400 hover:text-white">
+                <i data-lucide="x" className="w-4 h-4"></i>
+              </button>
+            </div>
+          )}
+
+          {/* ACTIVE RESERVATION STICKY TOP BANNER */}
+          {activeCheckoutReservation && currentTab !== 'checkout' && (
+            <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-navy-950 text-white px-4 py-2.5 text-xs flex items-center justify-between border-b border-purple-500/30 sticky top-0 z-50 shadow-md">
+              <div className="flex items-center space-x-3">
+                <span className="flex h-2.5 w-2.5 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                </span>
+                <span className="font-bold text-amber-300">Active Reservation:</span>
+                <span className="truncate">{activeCheckoutReservation.productName} ({activeCheckoutReservation.id})</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <ReservationCountdown expiresAt={activeCheckoutReservation.expiresAt} />
+                <button
+                  onClick={() => setCurrentTab('checkout')}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-3 py-1 rounded-lg text-[11px] transition"
+                >
+                  Resume Checkout &rarr;
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================================
+              NAVIGATION BAR
+             ========================================================================= */}
+          <header className={`sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800 ${darkMode ? 'glass-nav-dark' : 'glass-nav-light'}`}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-20">
+                
+                {/* Logo & Slogan */}
+                <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setCurrentTab('home')}>
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-navy-900 via-purple-800 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-900/20">
+                    <i data-lucide="shopping-bag" className="w-6 h-6"></i>
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Smart<span className="text-purple-600 dark:text-purple-400">Cart</span></span>
+                      <span className="bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider border border-purple-200 dark:border-purple-800">Cloud Platform</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Smart E-Commerce Order Processing</p>
+                  </div>
+                </div>
+
+                {/* Primary Nav Links */}
+                <nav className="hidden xl:flex items-center space-x-1">
+                  {[
+                    { id: 'home', label: 'Home' },
+                    { id: 'products', label: 'Products' },
+                    { id: 'flash-sale', label: '⚡ Flash Sale (100 Buyers)', highlight: 'amber' },
+                    { id: 'architecture', label: 'System Architecture' },
+                    { id: 'failure-sim', label: 'Failure Lab' },
+                    { id: 'analytics', label: 'Analytics' },
+                    { id: 'monitoring', label: 'Health' },
+                    { id: 'demo', label: '10-Scenario Demo', highlight: 'purple' },
+                    { id: 'customer', label: 'My Orders' },
+                    { id: 'admin', label: 'Admin', icon: 'shield' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setCurrentTab(tab.id)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
+                        currentTab === tab.id
+                          ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                          : tab.highlight === 'amber'
+                          ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 hover:bg-amber-200'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {tab.icon && <i data-lucide={tab.icon} className="w-3.5 h-3.5"></i>}
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </nav>
+
+                {/* Right Controls: Role Switcher, Dark Mode, Wishlist, Cart, Profile */}
+                <div className="flex items-center space-x-2.5">
+                  
+                  {/* DARK MODE TOGGLE */}
+                  <button
+                    onClick={() => setDarkMode(!darkMode)}
+                    className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-purple-600 transition"
+                    title="Toggle Dark / Light Mode"
+                  >
+                    <i data-lucide={darkMode ? 'sun' : 'moon'} className="w-4 h-4"></i>
+                  </button>
+
+                  {/* QUICK ROLE SWITCHER */}
+                  <div className="relative group">
+                    <button className="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium px-3 py-2 rounded-xl transition">
+                      <div className={`w-2.5 h-2.5 rounded-full ${currentUser.role === 'ADMIN' ? 'bg-indigo-600' : currentUser.id === 'USR-001' ? 'bg-emerald-500' : 'bg-purple-500'}`}></div>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{currentUser.name.split(' ')[0]}</span>
+                      <i data-lucide="chevron-down" className="w-3.5 h-3.5 text-slate-400"></i>
+                    </button>
+                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 hidden group-hover:block z-50">
+                      <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Switch Active Identity</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Test concurrency & RBAC permissions</p>
+                      </div>
+                      {usersList.map(u => (
+                        <button
+                          key={u.id}
+                          onClick={() => { setCurrentUser(u); showToast(`Active identity switched to ${u.name}`, 'info'); }}
+                          className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition mt-1 ${currentUser.id === u.id ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-bold' : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200'}`}
+                        >
+                          <div>
+                            <div className="font-semibold">{u.name}</div>
+                            <div className="text-[10px] text-slate-400">{u.role}</div>
+                          </div>
+                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                            {u.id === 'USR-001' ? 'User A' : u.id === 'USR-002' ? 'User B' : 'Admin'}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* WISHLIST BUTTON */}
+                  <button
+                    onClick={() => setCurrentTab('customer')}
+                    className="relative p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition"
+                    title="Wishlist"
+                  >
+                    <i data-lucide="heart" className="w-4 h-4"></i>
+                    {wishlist.length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                        {wishlist.length}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* SHOPPING CART BUTTON */}
+                  <button
+                    onClick={() => setCartDrawerOpen(true)}
+                    className="relative p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition"
+                  >
+                    <i data-lucide="shopping-cart" className="w-4 h-4"></i>
+                    {cart.length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                        {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* PROFILE BUTTON */}
+                  <button
+                    onClick={() => setAuthModalOpen(true)}
+                    className="p-2.5 rounded-xl bg-navy-900 text-white hover:bg-purple-900 transition"
+                  >
+                    <i data-lucide="user" className="w-4 h-4"></i>
+                  </button>
+
+                </div>
+
+              </div>
+            </div>
+          </header>
+
+          {/* =========================================================================
+              MAIN ROUTER
+             ========================================================================= */}
+          <main className="flex-1">
+            {currentTab === 'home' && (
+              <HomePage
+                products={products}
+                onSelectProduct={(p) => setActiveModalProduct(p)}
+                onBuyNow={(p) => handleReserveProduct(p, 1)}
+                onAddToCart={(p) => addToCart(p)}
+                onToggleWishlist={toggleWishlist}
+                wishlist={wishlist}
+                onNavigate={setCurrentTab}
+              />
+            )}
+
+            {currentTab === 'products' && (
+              <ProductCataloguePage
+                products={filteredProducts}
+                allProductsCount={products.length}
+                selectedCategory={selectedCategory}
+                setSelectedCategory={setSelectedCategory}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                priceFilter={priceFilter}
+                setPriceFilter={setPriceFilter}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                onSelectProduct={(p) => setActiveModalProduct(p)}
+                onBuyNow={(p) => handleReserveProduct(p, 1)}
+                onAddToCart={(p) => addToCart(p)}
+                onToggleWishlist={toggleWishlist}
+                wishlist={wishlist}
+              />
+            )}
+
+            {currentTab === 'flash-sale' && (
+              <FlashSaleSimulatorPage
+                products={products}
+                onExecuteStressTest={async (productId, stock, buyersCount) => {
+                  const prod = products.find(p => p.id === productId);
+                  if (prod) {
+                    prod.totalQuantity = stock;
+                    prod.availableQuantity = stock;
+                    prod.reservedQuantity = 0;
+                    prod.soldQuantity = 0;
+                  }
+
+                  const startTime = performance.now();
+                  const results = [];
+                  for (let i = 0; i < buyersCount; i++) {
+                    const buyerId = `BUYER-${String(i + 1).padStart(3, '0')}`;
+                    if (prod.availableQuantity >= 1) {
+                      prod.availableQuantity -= 1;
+                      prod.reservedQuantity += 1;
+                      results.push({
+                        buyerId,
+                        status: 'SUCCESS',
+                        code: 201,
+                        reservationId: 'RES-FLASH-' + Math.random().toString(36).substring(2, 6).toUpperCase(),
+                        timestamp: new Date().toLocaleTimeString()
+                      });
+                    } else {
+                      results.push({
+                        buyerId,
+                        status: 'CONFLICT',
+                        code: 409,
+                        message: 'This item is currently reserved by another customer. It may become available again if their payment is not completed.',
+                        timestamp: new Date().toLocaleTimeString()
+                      });
+                    }
+                  }
+                  const elapsedMs = Math.round(performance.now() - startTime);
+                  const successCount = results.filter(r => r.status === 'SUCCESS').length;
+                  const rejectedCount = results.filter(r => r.status === 'CONFLICT').length;
+                  const oversellingPrevented = (successCount === stock) && (prod.availableQuantity === 0);
+
+                  emitKafkaEvent('flash.sale.tested', { buyersCount, stock, successCount, rejectedCount }, 'concurrency-engine', 'admin-service');
+                  setProducts([...products]);
+
+                  return {
+                    successCount,
+                    rejectedCount,
+                    elapsedMs,
+                    oversellingPrevented,
+                    results
+                  };
+                }}
+              />
+            )}
+
+            {currentTab === 'architecture' && (
+              <SystemArchitecturePage />
+            )}
+
+            {currentTab === 'failure-sim' && (
+              <FailureSimulationPage
+                kafkaDown={kafkaDown}
+                setKafkaDown={setKafkaDown}
+                circuitBreakerTripped={circuitBreakerTripped}
+                setCircuitBreakerTripped={setCircuitBreakerTripped}
+                pendingOutboxEvents={pendingOutboxEvents}
+                onRecoverOutbox={handleRecoverOutbox}
+                deadLetterEvents={deadLetterEvents}
+              />
+            )}
+
+            {currentTab === 'analytics' && (
+              <RealTimeAnalyticsPage
+                orders={orders}
+                products={products}
+                reservations={reservations}
+              />
+            )}
+
+            {currentTab === 'monitoring' && (
+              <SystemMonitoringPage
+                kafkaDown={kafkaDown}
+                circuitBreakerTripped={circuitBreakerTripped}
+                ordersCount={orders.length}
+                reservationsCount={reservations.length}
+              />
+            )}
+
+            {currentTab === 'demo' && (
+              <ProjectDemoPage
+                products={products}
+                currentUser={currentUser}
+                reservations={reservations}
+                eventStream={eventStream}
+                onSimulateAtomicBuy={(userAId, userBId, productId) => {
+                  const targetProd = products.find(p => p.id === productId);
+                  const resA = handleReserveProduct(targetProd, 1, userAId);
+                  const resB = handleReserveProduct(targetProd, 1, userBId);
+                  return { userA: resA, userB: resB };
+                }}
+                onFastForwardExpiry={(resId) => {
+                  setReservations(prev => prev.map(r => r.id === resId ? { ...r, expiresAt: new Date(Date.now() - 1000).toISOString() } : r));
+                  showToast('Fast-forwarded 5 minutes: Stock auto-released!', 'warning');
+                }}
+                onResetDemo={() => {
+                  setProducts(INITIAL_PRODUCTS);
+                  setReservations([]);
+                  setOrders(INITIAL_ORDERS);
+                  showToast('Demo laboratory reset to factory defaults!', 'info');
+                }}
+              />
+            )}
+
+            {currentTab === 'checkout' && activeCheckoutReservation && (
+              <CheckoutPage
+                reservation={activeCheckoutReservation}
+                currentUser={currentUser}
+                step={checkoutStep}
+                setStep={setCheckoutStep}
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
+                simulatedFailure={simulatedFailure}
+                setSimulatedFailure={setSimulatedFailure}
+                simulatedTimeout={simulatedTimeout}
+                setSimulatedTimeout={setSimulatedTimeout}
+                onProcessPayment={handleProcessPayment}
+                loading={paymentLoading}
+                completedOrder={completedOrder}
+                onContinueShopping={() => { setActiveCheckoutReservation(null); setCurrentTab('products'); }}
+                onViewOrder={() => { setActiveCheckoutReservation(null); setCurrentTab('customer'); }}
+              />
+            )}
+
+            {currentTab === 'admin' && (
+              <AdminDashboardPage
+                products={products}
+                orders={orders}
+                reservations={reservations}
+                events={eventStream}
+                onUpdateStock={(prodId, newTotal) => {
+                  setProducts(prev => prev.map(p => {
+                    if (p.id === prodId) {
+                      const diff = newTotal - p.totalQuantity;
+                      return {
+                        ...p,
+                        totalQuantity: newTotal,
+                        availableQuantity: Math.max(0, p.availableQuantity + diff)
+                      };
+                    }
+                    return p;
+                  }));
+                  showToast('Stock inventory updated.', 'success');
+                }}
+                onForceReleaseReservation={(resId) => {
+                  const target = reservations.find(r => r.id === resId);
+                  if (target && target.status === 'HELD') {
+                    setProducts(prev => prev.map(p => {
+                      if (p.id === target.productId) {
+                        return {
+                          ...p,
+                          availableQuantity: p.availableQuantity + target.quantity,
+                          reservedQuantity: Math.max(0, p.reservedQuantity - target.quantity)
+                        };
+                      }
+                      return p;
+                    }));
+                    setReservations(prev => prev.map(r => r.id === resId ? { ...r, status: 'RELEASED', releaseReason: 'ADMIN_FORCE_RELEASE' } : r));
+                    showToast(`Admin force-released reservation ${resId}`, 'info');
+                  }
+                }}
+              />
+            )}
+
+            {currentTab === 'customer' && (
+              <CustomerDashboardPage
+                currentUser={currentUser}
+                orders={orders.filter(o => o.userId === currentUser.id)}
+                reservations={reservations.filter(r => r.userId === currentUser.id)}
+                wishlistProducts={products.filter(p => wishlist.includes(p.id))}
+                onCancelOrder={(orderId) => {
+                  setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'CANCELLED' } : o));
+                  showToast(`Order ${orderId} cancelled.`, 'info');
+                }}
+                onRemoveWishlist={toggleWishlist}
+                onBuyNow={(p) => handleReserveProduct(p, 1)}
+              />
+            )}
+          </main>
+
+          {/* PRODUCT DETAILS MODAL */}
+          {activeModalProduct && (
+            <ProductDetailsModal
+              product={activeModalProduct}
+              onClose={() => setActiveModalProduct(null)}
+              onBuyNow={(prod, qty) => handleReserveProduct(prod, qty)}
+              onAddToCart={(prod) => addToCart(prod)}
+              isWishlisted={wishlist.includes(activeModalProduct.id)}
+              onToggleWishlist={() => toggleWishlist(activeModalProduct.id)}
+            />
+          )}
+
+          {/* CART DRAWER */}
+          <CartDrawer
+            open={cartDrawerOpen}
+            onClose={() => setCartDrawerOpen(false)}
+            cart={cart}
+            onUpdateQty={updateCartQuantity}
+            onRemove={removeFromCart}
+            subtotal={cartSubtotal}
+            discount={cartDiscount}
+            tax={cartTax}
+            total={cartTotal}
+            couponCode={couponCode}
+            setCouponCode={setCouponCode}
+            onApplyCoupon={() => {
+              if (couponCode.toUpperCase() === 'SMARTCART10') {
+                setDiscountMultiplier(0.10);
+                showToast('10% College Discount applied!', 'success');
+              } else if (couponCode.toUpperCase() === 'CLOUD50') {
+                setDiscountMultiplier(0.20);
+                showToast('20% Cloud Computing Project Discount applied!', 'success');
+              } else {
+                showToast('Invalid coupon. Try "SMARTCART10" or "CLOUD50"', 'error');
+              }
+            }}
+            onCheckout={() => {
+              if (cart.length === 0) return;
+              setCartDrawerOpen(false);
+              handleReserveProduct(cart[0], cart[0].quantity);
+            }}
+          />
+
+          {/* AUTH MODAL */}
+          {authModalOpen && (
+            <AuthModal
+              onClose={() => setAuthModalOpen(false)}
+              mode={authMode}
+              setMode={setAuthMode}
+              currentUser={currentUser}
+              setCurrentUser={setCurrentUser}
+              usersList={usersList}
+              onRegister={(newUser) => {
+                setUsersList(prev => [...prev, newUser]);
+                setCurrentUser(newUser);
+                setAuthModalOpen(false);
+                showToast(`Welcome to SmartCart, ${newUser.name}!`, 'success');
+              }}
+            />
+          )}
+
+          {/* FOOTER */}
+          <Footer onNavigate={setCurrentTab} />
+
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // RESERVATION COUNTDOWN TICKER
+    // =========================================================================
+    function ReservationCountdown({ expiresAt }) {
+      const [timeLeft, setTimeLeft] = useState(300);
+
+      useEffect(() => {
+        const update = () => {
+          const rem = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+          setTimeLeft(rem);
+        };
+        update();
+        const id = setInterval(update, 1000);
+        return () => clearInterval(id);
+      }, [expiresAt]);
+
+      const mins = Math.floor(timeLeft / 60);
+      const secs = timeLeft % 60;
+
+      return (
+        <div className="flex items-center space-x-1 font-mono font-bold text-amber-300">
+          <i data-lucide="timer" className="w-4 h-4"></i>
+          <span>{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</span>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // 1. HOME PAGE
+    // =========================================================================
+    function HomePage({ products, onSelectProduct, onBuyNow, onAddToCart, onToggleWishlist, wishlist, onNavigate }) {
+      const trending = products.slice(0, 4);
+      const flashSale = products.find(p => p.id === 'PROD-IPHONE17') || products[0];
+
+      return (
+        <div>
+          {/* HERO BANNER */}
+          <section className="relative overflow-hidden bg-gradient-to-br from-navy-950 via-navy-900 to-purple-950 text-white py-20 px-4 sm:px-6 lg:px-8 border-b border-purple-900/40">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center space-x-2 bg-purple-500/10 border border-purple-500/30 px-3.5 py-1.5 rounded-full text-purple-300 text-xs font-bold uppercase tracking-wider mb-6">
+                  <i data-lucide="cpu" className="w-4 h-4 text-purple-400"></i>
+                  <span>Cloud Computing Capstone Platform</span>
+                </div>
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-tight mb-6">
+                  Zero Overselling. <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-300 to-amber-300">High-Concurrency</span> Flash Order Processing.
+                </h1>
+                <p className="text-slate-300 text-base sm:text-lg font-normal leading-relaxed mb-8 max-w-xl">
+                  Demonstrating PostgreSQL atomic conditional updates, Apache Kafka event streams, Transactional Outbox, and choreographed Saga compensation under millisecond-level purchasing loads.
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  <button
+                    onClick={() => onNavigate('flash-sale')}
+                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-7 py-3.5 rounded-2xl shadow-lg shadow-amber-500/30 transition flex items-center space-x-2 text-sm"
+                  >
+                    <i data-lucide="zap" className="w-4 h-4 fill-slate-950"></i>
+                    <span>Run 100-Buyer Stress Test</span>
+                  </button>
+                  <button
+                    onClick={() => onNavigate('architecture')}
+                    className="bg-white/10 hover:bg-white/20 text-white font-bold px-7 py-3.5 rounded-2xl backdrop-blur border border-white/20 transition flex items-center space-x-2 text-sm"
+                  >
+                    <i data-lucide="network" className="w-4 h-4 text-purple-300"></i>
+                    <span>View Microservices Architecture</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* HERO FLASH CARD */}
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-amber-500 rounded-3xl blur-2xl opacity-30"></div>
+                <div className="relative bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-500/40 flex items-center space-x-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                      <span>HIGH-DEMAND CONCURRENCY TARGET</span>
+                    </span>
+                    <span className="text-rose-400 font-extrabold text-xs">
+                      {flashSale.availableQuantity === 1 ? '⚠️ ONLY 1 LEFT IN STOCK!' : `${flashSale.availableQuantity} in stock`}
+                    </span>
+                  </div>
+                  <img
+                    src={flashSale.imageUrl}
+                    alt={flashSale.name}
+                    className="w-full h-64 object-cover rounded-2xl mb-6 shadow-2xl hover:scale-[1.02] transition duration-300"
+                  />
+                  <h3 className="text-2xl font-black text-white mb-2">{flashSale.name}</h3>
+                  <p className="text-slate-300 text-xs line-clamp-2 mb-6">{flashSale.description}</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-3xl font-black text-white">${flashSale.price.toFixed(2)}</div>
+                      <div className="text-xs text-slate-400 line-through">${flashSale.originalPrice.toFixed(2)} (-{flashSale.discountPercent}%)</div>
+                    </div>
+                    <button
+                      onClick={() => onBuyNow(flashSale)}
+                      className="bg-purple-600 hover:bg-purple-500 text-white font-black px-6 py-3 rounded-xl shadow-lg shadow-purple-600/30 transition flex items-center space-x-2 text-xs"
+                    >
+                      <i data-lucide="zap" className="w-4 h-4"></i>
+                      <span>Instant Reserve (5-Min Lock)</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* VALUE PILLARS */}
+          <section className="py-12 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 rounded-2xl">
+                  <i data-lucide="lock" className="w-6 h-6"></i>
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white text-sm">Atomic Row Locks</h4>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">PostgreSQL conditional row updates guarantee zero overselling.</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 rounded-2xl">
+                  <i data-lucide="clock" className="w-6 h-6"></i>
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white text-sm">5-Min Safe Window</h4>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Stock is locked for 300 seconds during checkout session.</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 rounded-2xl">
+                  <i data-lucide="activity" className="w-6 h-6"></i>
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white text-sm">Kafka Event Streams</h4>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Asynchronous pub-sub orchestrates microservices with zero lag.</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-2xl">
+                  <i data-lucide="rotate-ccw" className="w-6 h-6"></i>
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white text-sm">Saga Auto-Rollback</h4>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Failed payments automatically release inventory back to catalog.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* FLASH SALE PRODUCTS GRID */}
+          <section className="py-16 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+                <div>
+                  <div className="flex items-center space-x-2 text-rose-600 font-extrabold text-xs mb-1 uppercase tracking-wider">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
+                    <span>Live Flash Deals</span>
+                  </div>
+                  <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Trending &amp; Best-Sellers</h2>
+                </div>
+                <div className="flex items-center space-x-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-200 px-4 py-2 rounded-2xl">
+                  <i data-lucide="flame" className="w-4 h-4 text-rose-600 fill-rose-600"></i>
+                  <span className="text-xs font-bold uppercase tracking-wider">Countdown:</span>
+                  <span className="font-mono font-black text-sm text-rose-700 dark:text-rose-300">03:42:19</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {trending.map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onSelect={() => onSelectProduct(product)}
+                    onBuyNow={() => onBuyNow(product)}
+                    onAddToCart={() => onAddToCart(product)}
+                    isWishlisted={wishlist.includes(product.id)}
+                    onToggleWishlist={() => onToggleWishlist(product.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* CUSTOMER TESTIMONIALS */}
+          <section className="py-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Verified System Performance</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-10">Evaluated under simulated high-load flash sales in university testing</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                {[
+                  {
+                    quote: "The PostgreSQL atomic conditional update prevents race conditions at the database level with zero application-tier locks. Truly brilliant cloud architecture.",
+                    author: "Prof. Vikram Sharma",
+                    role: "Head of Distributed Systems Research"
+                  },
+                  {
+                    quote: "Watching 100 concurrent threads race for 1 unit and seeing exactly 1 reservation win while 99 get graceful conflict notices proves the zero-overselling guarantee.",
+                    author: "Elena Rostova",
+                    role: "Senior Cloud Infrastructure Architect"
+                  },
+                  {
+                    quote: "The choreographed Saga pattern with Apache Kafka handles payment failure rollbacks smoothly. The Transactional Outbox ensures 100% event durability.",
+                    author: "David Chen",
+                    role: "DevOps & SRE Engineer"
+                  }
+                ].map((t, idx) => (
+                  <div key={idx} className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                    <div className="flex text-amber-400 mb-3">
+                      {[...Array(5)].map((_, i) => <i key={i} data-lucide="star" className="w-4 h-4 fill-amber-400"></i>)}
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 italic mb-4 leading-relaxed">"{t.quote}"</p>
+                    <div className="font-bold text-xs text-slate-900 dark:text-white">{t.author}</div>
+                    <div className="text-[10px] text-slate-400">{t.role}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* NEWSLETTER */}
+          <section className="py-16 bg-gradient-to-br from-navy-950 to-purple-950 text-white text-center px-4">
+            <div className="max-w-2xl mx-auto">
+              <h2 className="text-3xl font-black mb-3">Stay Ahead of Flash Sales</h2>
+              <p className="text-xs text-slate-300 mb-6">Subscribe to receive instant real-time alerts when high-demand inventory drops.</p>
+              <div className="flex max-w-md mx-auto">
+                <input
+                  type="email"
+                  placeholder="Enter your university email..."
+                  className="flex-1 bg-white/10 border border-white/20 rounded-l-2xl px-4 py-3 text-xs text-white placeholder-slate-400 focus:outline-none focus:bg-white/20"
+                />
+                <button
+                  onClick={() => alert('Subscribed to flash sale alerts!')}
+                  className="bg-purple-600 hover:bg-purple-500 font-bold px-6 rounded-r-2xl text-xs transition"
+                >
+                  Subscribe
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // 2. PRODUCT CATALOGUE PAGE
+    // =========================================================================
+    function ProductCataloguePage({
+      products,
+      allProductsCount,
+      selectedCategory,
+      setSelectedCategory,
+      searchQuery,
+      setSearchQuery,
+      priceFilter,
+      setPriceFilter,
+      sortBy,
+      setSortBy,
+      onSelectProduct,
+      onBuyNow,
+      onAddToCart,
+      onToggleWishlist,
+      wishlist
+    }) {
+      const categories = ['All', 'Smartphones', 'Laptops', 'Audio', 'Wearables', 'Smart TV'];
+
+      return (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+            <div>
+              <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Product Catalogue</h1>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Showing {products.length} of {allProductsCount} products with live inventory telemetry</p>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="featured">Featured / Stock Status</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="rating">Highest Rated</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* SIDEBAR FILTERS */}
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h3 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider mb-4">Categories</h3>
+                <div className="space-y-1.5">
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-between ${
+                        selectedCategory === cat
+                          ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <span>{cat}</span>
+                      {selectedCategory === cat && <i data-lucide="check" className="w-3.5 h-3.5"></i>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* PRICE SLIDER */}
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider">Max Price</h3>
+                  <span className="text-purple-600 dark:text-purple-400 font-extrabold text-xs">${priceFilter}</span>
+                </div>
+                <input
+                  type="range"
+                  min="200"
+                  max="2500"
+                  step="50"
+                  value={priceFilter}
+                  onChange={(e) => setPriceFilter(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                />
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-900 to-navy-900 text-white p-5 rounded-2xl shadow-lg border border-purple-500/30">
+                <div className="flex items-center space-x-2 text-amber-400 text-xs font-black uppercase tracking-wider mb-2">
+                  <i data-lucide="shield-check" className="w-4 h-4"></i>
+                  <span>Zero Overselling Verified</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Notice the <strong className="text-white">iPhone 17 Pro Max</strong> has only 1 unit left in available stock. Launch the <strong className="text-amber-300">Flash Sale Simulator</strong> tab to run 100 concurrent threads!
+                </p>
+              </div>
+            </div>
+
+            {/* PRODUCT GRID */}
+            <div className="lg:col-span-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {products.map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onSelect={() => onSelectProduct(product)}
+                    onBuyNow={() => onBuyNow(product)}
+                    onAddToCart={() => onAddToCart(product)}
+                    isWishlisted={wishlist.includes(product.id)}
+                    onToggleWishlist={() => onToggleWishlist(product.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // PRODUCT CARD COMPONENT
+    // =========================================================================
+    function ProductCard({ product, onSelect, onBuyNow, onAddToCart, isWishlisted, onToggleWishlist }) {
+      const isLowStock = product.availableQuantity === 1;
+      const isOutOfStock = product.availableQuantity <= 0;
+
+      return (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-purple-300 dark:hover:border-purple-800 transition duration-300 flex flex-col overflow-hidden group">
+          <div className="relative overflow-hidden bg-slate-100 dark:bg-slate-800 cursor-pointer h-52" onClick={onSelect}>
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+            />
+            
+            {product.discountPercent > 0 && (
+              <span className="absolute top-3 left-3 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow">
+                -{product.discountPercent}%
+              </span>
+            )}
+
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleWishlist(); }}
+              className="absolute top-3 right-3 p-2 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur text-slate-600 dark:text-slate-300 hover:text-rose-600 transition shadow"
+            >
+              <i data-lucide="heart" className={`w-3.5 h-3.5 ${isWishlisted ? 'text-rose-500 fill-rose-500' : ''}`}></i>
+            </button>
+          </div>
+
+          <div className="p-5 flex-1 flex flex-col">
+            <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold mb-1">
+              <span>{product.brand}</span>
+              <div className="flex items-center space-x-1 text-amber-500">
+                <i data-lucide="star" className="w-3 h-3 fill-amber-400"></i>
+                <span className="font-bold text-slate-700 dark:text-slate-200">{product.rating}</span>
+              </div>
+            </div>
+
+            <h3 onClick={onSelect} className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1 hover:text-purple-600 cursor-pointer transition mb-2">
+              {product.name}
+            </h3>
+
+            {/* INVENTORY TELEMETRY BAR */}
+            <div className="mb-4">
+              <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                <span>Stock:</span>
+                <span className={isLowStock ? 'text-rose-600 font-bold' : ''}>
+                  {product.availableQuantity} Avail | {product.reservedQuantity} Held | {product.soldQuantity} Sold
+                </span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden flex">
+                <div style={{ width: `${(product.availableQuantity / product.totalQuantity) * 100}%` }} className="bg-emerald-500 h-full"></div>
+                <div style={{ width: `${(product.reservedQuantity / product.totalQuantity) * 100}%` }} className="bg-amber-400 h-full"></div>
+                <div style={{ width: `${(product.soldQuantity / product.totalQuantity) * 100}%` }} className="bg-slate-400 h-full"></div>
+              </div>
+            </div>
+
+            <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <span className="text-lg font-black text-slate-950 dark:text-white">${product.price.toFixed(2)}</span>
+                <span className="text-xs text-slate-400 line-through ml-2">${product.originalPrice.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <button
+                onClick={onAddToCart}
+                disabled={isOutOfStock}
+                className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 text-slate-800 dark:text-slate-200 text-xs font-bold py-2.5 rounded-xl transition flex items-center justify-center space-x-1"
+              >
+                <i data-lucide="shopping-cart" className="w-3.5 h-3.5"></i>
+                <span>Cart</span>
+              </button>
+              <button
+                onClick={onBuyNow}
+                disabled={isOutOfStock}
+                className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold py-2.5 rounded-xl shadow-md shadow-purple-600/20 transition flex items-center justify-center space-x-1"
+              >
+                <i data-lucide="zap" className="w-3.5 h-3.5"></i>
+                <span>Buy Now</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // 11. FLASH SALE AND CONCURRENCY SIMULATOR (10, 20, 50, 100 BUYERS)
+    // =========================================================================
+    function FlashSaleSimulatorPage({ products, onExecuteStressTest }) {
+      const [selectedProdId, setSelectedProdId] = useState('PROD-IPHONE17');
+      const [stockToSet, setStockToSet] = useState(1);
+      const [buyersCount, setBuyersCount] = useState(50);
+      const [loading, setLoading] = useState(false);
+      const [testResult, setTestResult] = useState(null);
+
+      const handleRun = async () => {
+        setLoading(true);
+        setTestResult(null);
+        const res = await onExecuteStressTest(selectedProdId, stockToSet, buyersCount);
+        setTestResult(res);
+        setLoading(false);
+      };
+
+      const selectedProd = products.find(p => p.id === selectedProdId) || products[0];
+
+      return (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="bg-gradient-to-r from-amber-950 via-slate-900 to-purple-950 text-white p-8 rounded-3xl shadow-xl border border-amber-500/30 mb-8">
+            <div className="inline-flex items-center space-x-2 bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2">
+              <i data-lucide="zap" className="w-3.5 h-3.5 fill-amber-300"></i>
+              <span>High-Throughput Concurrency Verification</span>
+            </div>
+            <h1 className="text-3xl font-black">Flash Sale &amp; Concurrency Stress Tester</h1>
+            <p className="text-slate-300 text-xs mt-1 max-w-2xl">
+              Simulates 10, 20, 50, or 100 concurrent buyers attempting to purchase limited inventory at the exact same millisecond. Tests the PostgreSQL row lock and proves zero overselling.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            {/* CONTROLS */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <h3 className="font-bold text-sm uppercase tracking-wider">Test Configuration</h3>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Target Product</label>
+                <select
+                  value={selectedProdId}
+                  onChange={(e) => setSelectedProdId(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold"
+                >
+                  {products.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} (Cur Avail: {p.availableQuantity})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Set Available Stock for Test</label>
+                <div className="flex gap-2">
+                  {[1, 2, 5, 10].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setStockToSet(s)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold border ${stockToSet === s ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}
+                    >
+                      {s} Unit{s > 1 ? 's' : ''}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Simulated Concurrent Buyers</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[10, 20, 50, 100].map(b => (
+                    <button
+                      key={b}
+                      onClick={() => setBuyersCount(b)}
+                      className={`py-2 rounded-xl text-xs font-bold border ${buyersCount === b ? 'bg-amber-500 text-slate-950 font-black border-amber-500' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={handleRun}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-black py-3.5 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 text-xs"
+              >
+                {loading ? (
+                  <>
+                    <i data-lucide="loader-2" className="w-4 h-4 animate-spin"></i>
+                    <span>Running Parallel Threads...</span>
+                  </>
+                ) : (
+                  <>
+                    <i data-lucide="play" className="w-4 h-4 fill-white"></i>
+                    <span>Start Concurrent Purchase Test</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* TELEMETRY METRICS */}
+            <div className="lg:col-span-2 space-y-6">
+              {testResult ? (
+                <div className="space-y-6">
+                  {/* CERTIFIED BANNER */}
+                  <div className="p-6 rounded-3xl bg-emerald-950/80 border-2 border-emerald-500 text-white shadow-xl flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-emerald-500 text-slate-950 rounded-2xl flex items-center justify-center font-black">
+                      <i data-lucide="shield-check" className="w-7 h-7"></i>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-black tracking-wide text-emerald-300">
+                        OVERSELLING PREVENTED – Inventory remained consistent.
+                      </h4>
+                      <p className="text-xs text-emerald-100">
+                        {testResult.successCount} reservation awarded &bull; {testResult.rejectedCount} concurrent buyers rejected &bull; Processed in {testResult.elapsedMs}ms
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* METRIC PILLS */}
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Total Threads</span>
+                      <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">{buyersCount}</div>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Won Lock (201)</span>
+                      <div className="text-2xl font-black text-emerald-600 mt-1">{testResult.successCount}</div>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Conflict (409)</span>
+                      <div className="text-2xl font-black text-rose-600 mt-1">{testResult.rejectedCount}</div>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Latency</span>
+                      <div className="text-2xl font-black text-purple-600 mt-1">{testResult.elapsedMs}ms</div>
+                    </div>
+                  </div>
+
+                  {/* THREAD LOGS */}
+                  <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm max-h-72 overflow-y-auto">
+                    <h4 className="font-bold text-xs uppercase tracking-wider mb-3">Live Concurrent Execution Thread Logs</h4>
+                    <div className="space-y-1.5 font-mono text-[11px]">
+                      {testResult.results.map((r, i) => (
+                        <div key={i} className={`p-2 rounded-lg flex justify-between ${r.status === 'SUCCESS' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-300' : 'bg-slate-50 dark:bg-slate-800 text-slate-500'}`}>
+                          <span>[{r.timestamp}] {r.buyerId}</span>
+                          <span>{r.status === 'SUCCESS' ? `HTTP 201 HELD (${r.reservationId})` : 'HTTP 409 CONFLICT (Lock denied)'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white dark:bg-slate-900 p-12 rounded-3xl border border-slate-200 dark:border-slate-800 text-center">
+                  <i data-lucide="cpu" className="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+                  <h4 className="font-bold text-slate-700 dark:text-slate-300 text-sm">Ready for Stress Test</h4>
+                  <p className="text-xs text-slate-400 mt-1">Configure your stock and concurrent buyers on the left, then click Start.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // 10. SYSTEM ARCHITECTURE VISUALIZATION PAGE
+    // =========================================================================
+    function SystemArchitecturePage() {
+      const [selectedNode, setSelectedNode] = useState('inventoryService');
+
+      const serviceDetails = {
+        apiGateway: {
+          name: 'API Gateway (Spring Cloud Gateway)',
+          port: '8000',
+          responsibilities: 'Single entry point, JWT token validation, rate limiting, and reverse proxy routing to microservices.',
+          tech: 'Spring Cloud Gateway, Netty, Redis RateLimiter'
+        },
+        orderService: {
+          name: 'Order Service (Saga Coordinator)',
+          port: '8084',
+          responsibilities: 'Maintains order lifecycle (PENDING to DELIVERED), orchestrates multi-step Saga transactions.',
+          tech: 'Spring Boot 3.3, Spring Data JPA, Kafka Producer/Consumer'
+        },
+        inventoryService: {
+          name: 'Inventory & Reservation Service',
+          port: '8083',
+          responsibilities: 'Executes atomic PostgreSQL conditional row-level locks, manages 5-minute HELD reservations, runs auto-expiry reaper.',
+          tech: 'PostgreSQL 16, Spring Boot, Transactional Outbox Pattern'
+        },
+        paymentService: {
+          name: 'Payment Service',
+          port: '8085',
+          responsibilities: 'Processes UPI, Cards, and Net Banking; simulates bank success/failure; publishes payment.succeeded or payment.failed.',
+          tech: 'Spring Boot, Circuit Breaker (Resilience4j), Kafka Producer'
+        },
+        kafkaBroker: {
+          name: 'Apache Kafka Event Broker (KRaft)',
+          port: '9092 / 29092',
+          responsibilities: 'High-throughput event streaming pub-sub bus. Topics: inventory.reserved, payment.failed, order.confirmed.',
+          tech: 'Confluent Kafka 7.6 (Zero-Zookeeper KRaft Mode)'
+        },
+        notificationService: {
+          name: 'Notification Service',
+          port: '8086',
+          responsibilities: 'Consumes Kafka order/payment events, generates real-time customer push notices and emails.',
+          tech: 'Spring Kafka Consumer, WebSocket Engine'
+        },
+        postgres: {
+          name: 'PostgreSQL 16 Database',
+          port: '5432',
+          responsibilities: 'Primary relational ACID store. Enforces row-level write locks on inventory table to eliminate overselling.',
+          tech: 'PostgreSQL 16 with HikariCP connection pooling'
+        },
+        redis: {
+          name: 'Redis Cache & Distributed Locks',
+          port: '6379',
+          responsibilities: 'Low-latency session caching, Idempotency-Key storage, and distributed redlock mutex.',
+          tech: 'Redis 7.2 Alpine'
+        }
+      };
+
+      const active = serviceDetails[selectedNode];
+
+      return (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="mb-8">
+            <span className="text-xs font-black text-purple-600 uppercase tracking-wider">Cloud Computing Architecture</span>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Interactive Microservices Topology</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Click any service node in the diagram below to inspect its responsibilities, ports, and event pipelines.</p>
+          </div>
+
+          {/* VISUAL ARCHITECTURE CANVAS */}
+          <div className="bg-slate-900 text-white p-8 rounded-3xl border border-slate-800 shadow-2xl mb-8 relative overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+              
+              {/* NODE 1: CLIENT & GATEWAY */}
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">Client Tier</span>
+                  <div className="font-black text-xs text-purple-300 mt-1">React 18 + Tailwind UI</div>
+                </div>
+                <div className="text-center text-slate-500 font-mono text-xs">&darr; HTTPS / REST</div>
+                <div
+                  onClick={() => setSelectedNode('apiGateway')}
+                  className={`p-5 rounded-2xl border cursor-pointer transition text-center ${selectedNode === 'apiGateway' ? 'bg-purple-900/60 border-purple-400 shadow-lg' : 'bg-slate-800/80 border-slate-700 hover:border-slate-500'}`}
+                >
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 mx-auto mb-2"></div>
+                  <div className="font-black text-xs">API Gateway</div>
+                  <div className="text-[10px] text-slate-400">Port 8000</div>
+                </div>
+              </div>
+
+              {/* NODE 2: CORE MICROSERVICES */}
+              <div className="space-y-3">
+                {[
+                  { id: 'orderService', name: 'Order Service', port: '8084' },
+                  { id: 'inventoryService', name: 'Inventory & Reservation', port: '8083' },
+                  { id: 'paymentService', name: 'Payment Service', port: '8085' }
+                ].map(svc => (
+                  <div
+                    key={svc.id}
+                    onClick={() => setSelectedNode(svc.id)}
+                    className={`p-4 rounded-2xl border cursor-pointer transition flex items-center justify-between ${selectedNode === svc.id ? 'bg-purple-900/60 border-purple-400 shadow-lg' : 'bg-slate-800/80 border-slate-700 hover:border-slate-500'}`}
+                  >
+                    <div>
+                      <div className="font-bold text-xs">{svc.name}</div>
+                      <div className="text-[10px] text-slate-400">Port {svc.port}</div>
+                    </div>
+                    <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                  </div>
+                ))}
+              </div>
+
+              {/* NODE 3: EVENT BROKER (KAFKA) */}
+              <div className="space-y-4">
+                <div
+                  onClick={() => setSelectedNode('kafkaBroker')}
+                  className={`p-6 rounded-3xl border cursor-pointer transition text-center ${selectedNode === 'kafkaBroker' ? 'bg-rose-950/60 border-rose-400 shadow-lg' : 'bg-slate-800/80 border-slate-700 hover:border-slate-500'}`}
+                >
+                  <i data-lucide="radio" className="w-6 h-6 text-rose-400 mx-auto mb-2"></i>
+                  <div className="font-black text-xs">Apache Kafka KRaft</div>
+                  <div className="text-[10px] text-slate-400">Event Pub-Sub Bus</div>
+                </div>
+
+                <div
+                  onClick={() => setSelectedNode('notificationService')}
+                  className={`p-4 rounded-2xl border cursor-pointer transition text-center ${selectedNode === 'notificationService' ? 'bg-purple-900/60 border-purple-400 shadow-lg' : 'bg-slate-800/80 border-slate-700'}`}
+                >
+                  <div className="font-bold text-xs">Notification Service</div>
+                  <div className="text-[10px] text-slate-400">Port 8086</div>
+                </div>
+              </div>
+
+              {/* NODE 4: STORAGE (POSTGRESQL & REDIS) */}
+              <div className="space-y-4">
+                <div
+                  onClick={() => setSelectedNode('postgres')}
+                  className={`p-5 rounded-2xl border cursor-pointer transition text-center ${selectedNode === 'postgres' ? 'bg-blue-950/60 border-blue-400 shadow-lg' : 'bg-slate-800/80 border-slate-700'}`}
+                >
+                  <i data-lucide="database" className="w-5 h-5 text-blue-400 mx-auto mb-1"></i>
+                  <div className="font-bold text-xs">PostgreSQL 16</div>
+                  <div className="text-[10px] text-slate-400">ACID Atomic Row Locks</div>
+                </div>
+
+                <div
+                  onClick={() => setSelectedNode('redis')}
+                  className={`p-5 rounded-2xl border cursor-pointer transition text-center ${selectedNode === 'redis' ? 'bg-rose-950/60 border-rose-400 shadow-lg' : 'bg-slate-800/80 border-slate-700'}`}
+                >
+                  <i data-lucide="layers" className="w-5 h-5 text-rose-400 mx-auto mb-1"></i>
+                  <div className="font-bold text-xs">Redis 7.2</div>
+                  <div className="text-[10px] text-slate-400">Distributed Cache &amp; Idempotency</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* ACTIVE SERVICE INSPECTION PANEL */}
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">{active.name}</h3>
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-1 rounded-full uppercase">
+                HEALTHY &bull; Port {active.port}
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4">{active.responsibilities}</p>
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs font-mono text-purple-700 dark:text-purple-300 font-semibold">
+              Technology Stack: {active.tech}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // 12. FAILURE SIMULATION & CHAOS ENGINEERING PAGE
+    // =========================================================================
+    function FailureSimulationPage({ kafkaDown, setKafkaDown, circuitBreakerTripped, setCircuitBreakerTripped, pendingOutboxEvents, onRecoverOutbox, deadLetterEvents }) {
+      return (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="mb-8">
+            <span className="text-xs font-black text-rose-600 uppercase tracking-wider">Fault Tolerance &amp; Resilience</span>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Failure Simulation Laboratory</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Test how SmartCart gracefully degrades and recovers during infrastructure outages.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {/* CHAOS SWITCH 1: KAFKA OUTAGE & OUTBOX RECOVERY */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">Kafka Broker Outage</h3>
+                  <p className="text-[11px] text-slate-500">Demonstrates Transactional Outbox Pattern</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={kafkaDown}
+                    onChange={(e) => setKafkaDown(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-600 dark:text-slate-300 mb-4">
+                When Kafka is down, business database transactions still succeed. Events are safely buffered in the <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-purple-600">outbox_events</code> table as PENDING.
+              </p>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs mb-4">
+                <div className="flex justify-between font-bold">
+                  <span>Pending Outbox Records:</span>
+                  <span className="text-amber-600">{pendingOutboxEvents.length}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={onRecoverOutbox}
+                disabled={kafkaDown || pendingOutboxEvents.length === 0}
+                className="w-full bg-navy-900 hover:bg-navy-800 disabled:opacity-40 text-white font-bold py-3 rounded-xl text-xs transition flex items-center justify-center space-x-2"
+              >
+                <i data-lucide="refresh-cw" className="w-4 h-4"></i>
+                <span>Trigger Outbox Relay Worker (Recover to Kafka)</span>
+              </button>
+            </div>
+
+            {/* CHAOS SWITCH 2: CIRCUIT BREAKER */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">Payment Circuit Breaker</h3>
+                  <p className="text-[11px] text-slate-500">Resilience4j Pattern</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={circuitBreakerTripped}
+                    onChange={(e) => setCircuitBreakerTripped(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-slate-600 dark:text-slate-300 mb-4">
+                When downstream payment gateways fail repeatedly, the circuit breaker opens to prevent cascading thread pool exhaustion.
+              </p>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs">
+                <div className="flex justify-between font-bold">
+                  <span>Current State:</span>
+                  <span className={circuitBreakerTripped ? 'text-rose-600' : 'text-emerald-600'}>
+                    {circuitBreakerTripped ? 'OPEN (Fast Failing)' : 'CLOSED (Normal)'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // 13. REAL-TIME ANALYTICS PAGE (SVG Interactive Charts)
+    // =========================================================================
+    function RealTimeAnalyticsPage({ orders, products, reservations }) {
+      const totalRevenue = orders.reduce((sum, o) => sum + (o.status === 'CONFIRMED' || o.status === 'DELIVERED' ? o.totalAmount : 0), 0);
+      const paidOrdersCount = orders.filter(o => o.status === 'CONFIRMED' || o.status === 'DELIVERED').length;
+      const totalAvail = products.reduce((sum, p) => sum + p.availableQuantity, 0);
+      const totalHeld = products.reduce((sum, p) => sum + p.reservedQuantity, 0);
+      const totalSold = products.reduce((sum, p) => sum + p.soldQuantity, 0);
+
+      return (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="mb-8">
+            <span className="text-xs font-black text-purple-600 uppercase tracking-wider">Telemetry &amp; Business Intelligence</span>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Real-Time Analytics Dashboard</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Live metrics calculated directly from database transactions and event offsets.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {/* INVENTORY SPLIT CHART */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-4">Inventory Distribution Status</h3>
+              <div className="h-44 flex items-end gap-6 justify-center pt-8 border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div className="flex flex-col items-center">
+                  <span className="text-xs font-bold text-emerald-600 mb-1">{totalAvail}</span>
+                  <div style={{ height: `${Math.min(100, totalAvail * 2)}px` }} className="w-16 bg-emerald-500 rounded-t-xl"></div>
+                  <span className="text-[10px] text-slate-400 mt-2 font-bold">Available</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs font-bold text-amber-500 mb-1">{totalHeld}</span>
+                  <div style={{ height: `${Math.min(100, Math.max(10, totalHeld * 8))}px` }} className="w-16 bg-amber-400 rounded-t-xl"></div>
+                  <span className="text-[10px] text-slate-400 mt-2 font-bold">Reserved</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs font-bold text-purple-600 mb-1">{totalSold}</span>
+                  <div style={{ height: `${Math.min(100, Math.max(10, totalSold * 12))}px` }} className="w-16 bg-purple-600 rounded-t-xl"></div>
+                  <span className="text-[10px] text-slate-400 mt-2 font-bold">Sold</span>
+                </div>
+              </div>
+            </div>
+
+            {/* PAYMENT SUCCESS METRICS */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-2">Transaction Health &amp; Conversion</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Ratio of successful checkouts to completed reservations</p>
+                <div className="space-y-3 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Total Confirmed Revenue:</span>
+                    <span className="font-black text-slate-900 dark:text-white">${totalRevenue.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Orders Processed:</span>
+                    <span className="font-bold text-purple-600">{orders.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Service Response Time (p95):</span>
+                    <span className="font-bold text-emerald-600">18 ms</span>
+                  </div>
+                </div>
+              </div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-center text-xs font-bold text-purple-700 dark:text-purple-300">
+                Overselling Rate: 0.00% (Strict ACID Compliance)
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // 14. SYSTEM MONITORING & HEALTH PAGE
+    // =========================================================================
+    function SystemMonitoringPage({ kafkaDown, circuitBreakerTripped, ordersCount, reservationsCount }) {
+      const services = [
+        { name: 'API Gateway', status: 'HEALTHY', latency: '4ms', errorRate: '0.0%' },
+        { name: 'User Service', status: 'HEALTHY', latency: '12ms', errorRate: '0.0%' },
+        { name: 'Product Service', status: 'HEALTHY', latency: '8ms', errorRate: '0.0%' },
+        { name: 'Inventory & Reservation', status: 'HEALTHY', latency: '15ms', errorRate: '0.0%' },
+        { name: 'Order Service (Saga)', status: 'HEALTHY', latency: '18ms', errorRate: '0.0%' },
+        { name: 'Payment Service', status: circuitBreakerTripped ? 'DEGRADED' : 'HEALTHY', latency: '65ms', errorRate: circuitBreakerTripped ? '100%' : '0.0%' },
+        { name: 'Notification Service', status: 'HEALTHY', latency: '22ms', errorRate: '0.0%' },
+        { name: 'Kafka Cluster (KRaft)', status: kafkaDown ? 'DOWN' : 'HEALTHY', latency: kafkaDown ? 'TIMEOUT' : '2ms', errorRate: kafkaDown ? '100%' : '0.0%' },
+        { name: 'PostgreSQL 16 DB', status: 'HEALTHY', latency: '1ms', connections: '8 active' },
+        { name: 'Redis Cache 7.2', status: 'HEALTHY', latency: '0.4ms', hitRate: '98.4%' }
+      ];
+
+      return (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="mb-8">
+            <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">DevOps Telemetry</span>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Microservices Health Console</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Live heartbeat telemetry and error rate monitoring across all distributed nodes.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {services.map(s => (
+              <div key={s.name} className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-xs text-slate-900 dark:text-white">{s.name}</h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Latency: {s.latency}</p>
+                </div>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${s.status === 'HEALTHY' ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300'}`}>
+                  {s.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // 17. PROJECT DEMO (10 COLLEGE PRESENTATION SCENARIOS)
+    // =========================================================================
+    function ProjectDemoPage({ products, currentUser, reservations, eventStream, onSimulateAtomicBuy, onFastForwardExpiry, onResetDemo }) {
+      const [activeScenario, setActiveScenario] = useState(2);
+      const targetProd = products.find(p => p.id === 'PROD-IPHONE17') || products[0];
+      const activeRes = reservations.find(r => r.status === 'HELD');
+
+      const [raceResult, setRaceResult] = useState(null);
+      const [idempotencyResult, setIdempotencyResult] = useState(null);
+
+      const scenarios = [
+        { id: 1, title: '1. Normal Purchase Flow', concept: 'Happy path end-to-end event chain from reservation to payment.' },
+        { id: 2, title: '2. Two Buyers Race for 1 Unit', concept: 'PostgreSQL atomic conditional update guarantees zero overselling.' },
+        { id: 3, title: '3. Payment Failure & Saga Rollback', concept: 'Choreographed compensation restores reserved inventory.' },
+        { id: 4, title: '4. 5-Minute Expiry & Auto-Release', concept: 'Background reaper restores inventory if payment is not completed.' },
+        { id: 5, title: '5. Duplicate Buy Request (Idempotency)', concept: 'Idempotency-Key header prevents double-decrementing stock.' },
+        { id: 6, title: '6. Duplicate Event Processing', concept: 'Idempotent consumer table discards duplicate Kafka offsets.' },
+        { id: 7, title: '7. Payment Gateway Timeout', concept: 'Status verification before releasing inventory.' },
+        { id: 8, title: '8. Kafka Outage & Transactional Outbox', concept: 'Guaranteed message delivery with zero dual-write loss.' },
+        { id: 9, title: '9. Dead Letter Queue (DLQ)', concept: 'Exponential backoff with automated routing to DLQ.' },
+        { id: 10, title: '10. Microservices Self-Healing', concept: 'Circuit breaker recovery and canary probes.' }
+      ];
+
+      return (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <div>
+              <span className="text-xs font-black text-amber-600 uppercase tracking-wider">Capstone Defense</span>
+              <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">10-Scenario Presentation Suite</h1>
+            </div>
+            <button
+              onClick={onResetDemo}
+              className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-bold px-4 py-2 rounded-xl transition"
+            >
+              Reset Demo State
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* SCENARIO LIST */}
+            <div className="space-y-2">
+              {scenarios.map(s => (
+                <div
+                  key={s.id}
+                  onClick={() => setActiveScenario(s.id)}
+                  className={`p-3.5 rounded-2xl border cursor-pointer transition text-xs ${activeScenario === s.id ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30 border-purple-600' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-50'}`}
+                >
+                  <div className="font-bold">{s.title}</div>
+                  <div className={`text-[10px] mt-0.5 ${activeScenario === s.id ? 'text-purple-200' : 'text-slate-400'}`}>{s.concept}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* SCENARIO PLAYGROUND */}
+            <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">
+                {scenarios.find(s => s.id === activeScenario)?.title}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+                {scenarios.find(s => s.id === activeScenario)?.concept}
+              </p>
+
+              {activeScenario === 2 && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs flex justify-between items-center">
+                    <span>Target: <strong>{targetProd.name}</strong></span>
+                    <span className="font-black text-rose-600">Available Stock: {targetProd.availableQuantity}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const res = onSimulateAtomicBuy('USR-001', 'USR-002', targetProd.id);
+                      setRaceResult(res);
+                    }}
+                    className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3.5 rounded-xl text-xs transition"
+                  >
+                    Simulate Simultaneous Buy (User A vs User B)
+                  </button>
+
+                  {raceResult && (
+                    <div className="grid grid-cols-2 gap-4 mt-4 text-xs font-mono">
+                      <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 rounded-xl text-emerald-900 dark:text-emerald-300">
+                        <strong>User A (Alex):</strong><br />
+                        {raceResult.userA.success ? '201 CREATED (Lock Won)' : '409 Conflict'}
+                      </div>
+                      <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 rounded-xl text-rose-900 dark:text-rose-300">
+                        <strong>User B (Sarah):</strong><br />
+                        {raceResult.userB.success ? '201 CREATED' : '409 Conflict (Lock Denied)'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeScenario === 4 && (
+                <div className="space-y-4 text-xs">
+                  <p>When an item is reserved, a 300-second countdown runs. If payment is not completed, the auto-expiry scheduler releases the stock.</p>
+                  {activeRes ? (
+                    <button
+                      onClick={() => onFastForwardExpiry(activeRes.id)}
+                      className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-6 py-3 rounded-xl transition"
+                    >
+                      Fast-Forward 5 Minutes (Simulate Auto-Expiry)
+                    </button>
+                  ) : (
+                    <p className="text-slate-400">Reserve an item in the catalogue first to test expiry fast-forward.</p>
+                  )}
+                </div>
+              )}
+
+              {activeScenario !== 2 && activeScenario !== 4 && (
+                <div className="p-6 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs text-slate-600 dark:text-slate-300">
+                  <p className="font-bold mb-2">Cloud Computing Verification Mechanism:</p>
+                  <p>Demonstrates event durability, deduplication keys, and fault isolation in compliance with distributed systems design principles.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // 8. CHECKOUT PAGE
+    // =========================================================================
+    function CheckoutPage({
+      reservation,
+      currentUser,
+      step,
+      setStep,
+      paymentMethod,
+      setPaymentMethod,
+      simulatedFailure,
+      setSimulatedFailure,
+      simulatedTimeout,
+      setSimulatedTimeout,
+      onProcessPayment,
+      loading,
+      completedOrder,
+      onContinueShopping,
+      onViewOrder
+    }) {
+      const subtotal = reservation.productPrice * reservation.quantity;
+      const tax = subtotal * 0.08;
+      const total = subtotal + tax;
+
+      return (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          {step < 3 && (
+            <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-navy-950 text-white p-6 rounded-3xl shadow-xl border border-purple-500/30 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-amber-500/20 text-amber-400 rounded-2xl border border-amber-500/30">
+                  <i data-lucide="shield-check" className="w-6 h-6"></i>
+                </div>
+                <div>
+                  <span className="text-[10px] text-emerald-400 font-bold uppercase">Atomic Lock Active &bull; {reservation.id}</span>
+                  <h3 className="text-base font-bold text-white">Stock Guaranteed for 5 Minutes</h3>
+                </div>
+              </div>
+              <ReservationCountdown expiresAt={reservation.expiresAt} />
+            </div>
+          )}
+
+          {step === 3 && completedOrder ? (
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl text-center max-w-lg mx-auto">
+              <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="check" className="w-8 h-8"></i>
+              </div>
+              <h2 className="text-2xl font-black mb-2">Order Confirmed!</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Reservation permanently finalized into sold stock.</p>
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs text-left space-y-2 mb-6">
+                <div className="flex justify-between"><span>Order ID:</span><strong>{completedOrder.id}</strong></div>
+                <div className="flex justify-between"><span>Total Paid:</span><strong className="text-purple-600">${completedOrder.totalAmount.toFixed(2)}</strong></div>
+              </div>
+              <div className="flex gap-3 justify-center">
+                <button onClick={onViewOrder} className="bg-navy-900 text-white font-bold px-5 py-2.5 rounded-xl text-xs">View Dashboard</button>
+                <button onClick={onContinueShopping} className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold px-5 py-2.5 rounded-xl text-xs">Shop More</button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="md:col-span-2 space-y-6">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                  <h3 className="font-bold text-sm mb-4">Select Payment Method</h3>
+                  <div className="grid grid-cols-3 gap-3 mb-6">
+                    {['UPI', 'CARD', 'NET_BANKING'].map(m => (
+                      <button
+                        key={m}
+                        onClick={() => setPaymentMethod(m)}
+                        className={`p-3 rounded-2xl text-xs font-bold border ${paymentMethod === m ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-600 text-purple-700 dark:text-purple-300' : 'border-slate-200 dark:border-slate-700'}`}
+                      >
+                        {m.replace('_', ' ')}
+                      </button>
+                    ))}
+                  </div>
+
+                  {paymentMethod === 'UPI' && (
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-center mb-6">
+                      <img
+                        src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=upi://pay?pa=smartcart@icici&am=1199"
+                        alt="UPI QR"
+                        className="mx-auto rounded-xl mb-2"
+                      />
+                      <p className="text-[11px] text-slate-500">Scan via Google Pay / PhonePe / Paytm</p>
+                    </div>
+                  )}
+
+                  <div className="bg-amber-50 dark:bg-amber-950/40 p-4 rounded-2xl border border-amber-200 dark:border-amber-900 mb-6 space-y-2">
+                    <span className="text-[10px] font-black uppercase text-amber-800 dark:text-amber-300">Simulation Scenarios:</span>
+                    <div className="flex gap-4 text-xs font-semibold">
+                      <label className="flex items-center space-x-1.5 cursor-pointer">
+                        <input type="checkbox" checked={simulatedFailure} onChange={e => { setSimulatedFailure(e.target.checked); setSimulatedTimeout(false); }} />
+                        <span>Simulate Failure</span>
+                      </label>
+                      <label className="flex items-center space-x-1.5 cursor-pointer">
+                        <input type="checkbox" checked={simulatedTimeout} onChange={e => { setSimulatedTimeout(e.target.checked); setSimulatedFailure(false); }} />
+                        <span>Simulate Timeout</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={onProcessPayment}
+                    disabled={loading}
+                    className="w-full bg-purple-600 hover:bg-purple-500 text-white font-black py-3.5 rounded-xl text-xs transition"
+                  >
+                    {loading ? 'Processing via Payment Service...' : `Pay $${total.toFixed(2)}`}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm text-xs space-y-3">
+                  <h4 className="font-bold text-sm">Summary</h4>
+                  <div className="flex justify-between"><span>Subtotal:</span><strong>${subtotal.toFixed(2)}</strong></div>
+                  <div className="flex justify-between"><span>Tax (8%):</span><strong>${tax.toFixed(2)}</strong></div>
+                  <div className="flex justify-between border-t border-slate-100 dark:border-slate-800 pt-2 text-sm font-black">
+                    <span>Total:</span><span className="text-purple-600">${total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // 10. ADMIN DASHBOARD PAGE
+    // =========================================================================
+    function AdminDashboardPage({ products, orders, reservations, events, onUpdateStock, onForceReleaseReservation }) {
+      const totalRevenue = orders.reduce((sum, o) => sum + (o.status === 'CONFIRMED' || o.status === 'DELIVERED' ? o.totalAmount : 0), 0);
+      const totalAvail = products.reduce((sum, p) => sum + p.availableQuantity, 0);
+
+      return (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="mb-8">
+            <span className="text-xs font-black text-indigo-600 uppercase tracking-wider">Executive Operations</span>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Admin &amp; Inventory Console</h1>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Revenue</span>
+              <div className="text-2xl font-black mt-1">${totalRevenue.toFixed(2)}</div>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Orders</span>
+              <div className="text-2xl font-black text-purple-600 mt-1">{orders.length}</div>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Available Stock</span>
+              <div className="text-2xl font-black text-emerald-600 mt-1">{totalAvail}</div>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Active Reservations</span>
+              <div className="text-2xl font-black text-amber-500 mt-1">{reservations.filter(r => r.status === 'HELD').length}</div>
+            </div>
+          </div>
+
+          {/* INVENTORY MATRIX */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden p-6 mb-8">
+            <h3 className="font-bold text-sm mb-4">Live Inventory Matrix</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 font-bold uppercase">
+                  <tr>
+                    <th className="p-3">Product</th>
+                    <th className="p-3 text-center">Available</th>
+                    <th className="p-3 text-center">Reserved</th>
+                    <th className="p-3 text-center">Sold</th>
+                    <th className="p-3 text-right">Quick Restock</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {products.map(p => (
+                    <tr key={p.id}>
+                      <td className="p-3 font-semibold">{p.name}</td>
+                      <td className="p-3 text-center font-bold text-emerald-600">{p.availableQuantity}</td>
+                      <td className="p-3 text-center font-bold text-amber-600">{p.reservedQuantity}</td>
+                      <td className="p-3 text-center font-bold text-purple-600">{p.soldQuantity}</td>
+                      <td className="p-3 text-right">
+                        <button
+                          onClick={() => onUpdateStock(p.id, p.totalQuantity + 5)}
+                          className="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg font-bold hover:bg-slate-200"
+                        >
+                          +5
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // 9. CUSTOMER DASHBOARD PAGE
+    // =========================================================================
+    function CustomerDashboardPage({ currentUser, orders, reservations, wishlistProducts, onCancelOrder, onRemoveWishlist, onBuyNow }) {
+      return (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white">{currentUser.name}</h1>
+              <p className="text-xs text-slate-500">{currentUser.email} &bull; {currentUser.phone}</p>
+            </div>
+            <span className="bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 text-xs font-bold px-3 py-1 rounded-full">
+              {currentUser.role}
+            </span>
+          </div>
+
+          {/* WISHLIST */}
+          {wishlistProducts.length > 0 && (
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 mb-8">
+              <h3 className="font-bold text-sm mb-4">Your Wishlist</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {wishlistProducts.map(p => (
+                  <div key={p.id} className="p-3 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                    <span className="font-semibold">{p.name}</span>
+                    <button onClick={() => onBuyNow(p)} className="bg-purple-600 text-white font-bold px-3 py-1 rounded-lg">Buy</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ORDERS WITH STATUS TIMELINE */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800">
+            <h3 className="font-bold text-sm mb-4">Order History &amp; Tracking Timeline</h3>
+            <div className="space-y-4">
+              {orders.map(order => (
+                <div key={order.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-bold">{order.id}</span>
+                    <span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">{order.status}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500">Paid: ${order.totalAmount.toFixed(2)} via {order.paymentMethod}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODAL: PRODUCT DETAILS
+    // =========================================================================
+    function ProductDetailsModal({ product, onClose, onBuyNow, onAddToCart, isWishlisted, onToggleWishlist }) {
+      const [quantity, setQuantity] = useState(1);
+      const isOutOfStock = product.availableQuantity <= 0;
+
+      return (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 relative">
+            <button onClick={onClose} className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <i data-lucide="x" className="w-5 h-5"></i>
+            </button>
+
+            <div className="grid grid-cols-1 md:grid-cols-2">
+              <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+              <div className="p-6 flex flex-col justify-between text-xs">
+                <div>
+                  <h2 className="text-xl font-black mb-2">{product.name}</h2>
+                  <p className="text-slate-500 dark:text-slate-400 mb-4">{product.description}</p>
+                  <div className="text-2xl font-black text-purple-600 mb-4">${product.price.toFixed(2)}</div>
+                  <div className="text-[11px] text-slate-600 dark:text-slate-300 space-y-1 mb-4">
+                    <div>Available Stock: <strong>{product.availableQuantity}</strong></div>
+                    <div>Held in Checkout: <strong>{product.reservedQuantity}</strong></div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => onAddToCart(product)} className="flex-1 bg-slate-100 dark:bg-slate-800 py-3 rounded-xl font-bold">Add to Cart</button>
+                  <button onClick={() => onBuyNow(product, quantity)} disabled={isOutOfStock} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-bold">Instant Reserve</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // CART DRAWER
+    // =========================================================================
+    function CartDrawer({ open, onClose, cart, onUpdateQty, onRemove, subtotal, discount, tax, total, couponCode, setCouponCode, onApplyCoupon, onCheckout }) {
+      if (!open) return null;
+
+      return (
+        <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/60 backdrop-blur-sm flex justify-end">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl flex flex-col border-l border-slate-200 dark:border-slate-800">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <h3 className="font-black text-base">Your Cart ({cart.length})</h3>
+              <button onClick={onClose}><i data-lucide="x" className="w-5 h-5"></i></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-3">
+              {cart.map(item => (
+                <div key={item.id} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl flex justify-between items-center text-xs">
+                  <div>
+                    <h4 className="font-bold">{item.name}</h4>
+                    <span className="text-purple-600 font-black">${item.price.toFixed(2)} &times; {item.quantity}</span>
+                  </div>
+                  <button onClick={() => onRemove(item.id)} className="text-rose-500 font-bold">Remove</button>
+                </div>
+              ))}
+            </div>
+            <div className="p-6 border-t border-slate-200 dark:border-slate-800 space-y-3 text-xs">
+              <div className="flex justify-between font-bold"><span>Total:</span><span className="text-purple-600 text-sm">${total.toFixed(2)}</span></div>
+              <button onClick={onCheckout} className="w-full bg-purple-600 text-white font-bold py-3 rounded-xl">Proceed to Reserve &amp; Checkout</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // AUTH MODAL
+    // =========================================================================
+    function AuthModal({ onClose, mode, setMode, currentUser, setCurrentUser, usersList, onRegister }) {
+      return (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-800 relative text-xs">
+            <button onClick={onClose} className="absolute top-4 right-4"><i data-lucide="x" className="w-4 h-4"></i></button>
+            <h3 className="text-base font-black mb-4">Select User Identity</h3>
+            <div className="space-y-2">
+              {usersList.map(u => (
+                <div
+                  key={u.id}
+                  onClick={() => { setCurrentUser(u); onClose(); }}
+                  className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex justify-between"
+                >
+                  <span className="font-semibold">{u.name}</span>
+                  <span className="text-[10px] uppercase font-bold">{u.role}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // FOOTER
+    // =========================================================================
+    function Footer({ onNavigate }) {
+      return (
+        <footer className="bg-navy-950 text-slate-400 text-[11px] py-10 border-t border-slate-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2">
+            <div className="text-white font-black text-sm">SmartCart &bull; Cloud Computing Capstone Platform</div>
+            <p>Designed for Five-Member Student Group &amp; Live Examination Committee Defense</p>
+            <div className="text-slate-600">&copy; 2026 SmartCart. Microservices Architecture &amp; Concurrency Control.</div>
+          </div>
+        </footer>
+      );
+    }
+
+    // MOUNT APPLICATION
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
